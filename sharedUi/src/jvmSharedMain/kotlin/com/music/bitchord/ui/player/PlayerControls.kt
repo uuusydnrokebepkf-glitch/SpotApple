@@ -124,7 +124,7 @@ import com.music.bitchord.data.model.Song
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
-
+import com.music.bitchord.ui.player.AppleStyleSlider
 /**
  * How long the shuffle glyph ignores further taps after one lands.
  *
@@ -225,15 +225,12 @@ internal fun PlayerScrubber(
     // One clock for the bar and the "Mixing" label, so they breathe on the same beat.
     val mixPulse = rememberMixPulse({ mixBlend.value }, enabled = !reduceAnimation)
     Column(Modifier.fillMaxWidth()) {
-        ThinSlider(
-            value = shown,
-            onValueChange = onScrub,
-            onValueChangeFinished = onScrubFinished,
-            loading = loading,
-            mixing = mixing,
-            mixPulse = mixPulse,
-            transitionWindow = transitionWindow,
-        )
+        // Ganti ThinSlider menjadi AppleStyleSlider
+    AppleStyleSlider(
+        value = shown,
+        onValueChange = onScrub,
+        onValueChangeFinished = onScrubFinished
+    )
         Box(
             modifier = Modifier
                 .fillMaxWidth()
