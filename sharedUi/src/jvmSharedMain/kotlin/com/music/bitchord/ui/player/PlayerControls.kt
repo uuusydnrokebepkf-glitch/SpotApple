@@ -226,10 +226,14 @@ internal fun PlayerScrubber(
     val mixPulse = rememberMixPulse({ mixBlend.value }, enabled = !reduceAnimation)
     Column(Modifier.fillMaxWidth()) {
         // Ganti ThinSlider menjadi AppleStyleSlider
-    AppleStyleSlider(
-        value = shown,
-        onValueChange = onScrub,
-        onValueChangeFinished = onScrubFinished
+    ThinSlider(
+       value = shown,
+       onValueChange = onScrub,
+       onValueChangeFinished = onScrubFinished,
+       loading = loading,
+       mixing = mixing,
+       mixPulse = mixPulse,
+       transitionWindow = transitionWindow,
     )
         Box(
             modifier = Modifier
