@@ -1,0 +1,15 @@
+name: Buat Keystore
+on: [workflow_dispatch]
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate Keystore
+      run: |
+        keytool -genkey -v -keystore spotapple.jks -keyalg RSA -keysize 2048 -validity 10000 -alias spotapple -storepass rahasia123 -keypass rahasia123 -dname "CN=SpotApple, OU=Dev, O=Dev, L=Dev, S=Dev, C=ID"
+    - name: Upload Keystore
+      uses: actions/upload-artifact@v4
+      with:
+        name: spotapple-jks
+        path: spotapple.jks
