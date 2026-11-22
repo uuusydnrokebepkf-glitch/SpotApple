@@ -454,6 +454,8 @@ fun <T : Any> IosMenuPopover(
     val reduceMotion = appReduceAnimation || systemAnimationsOff
 
     val progress = remember { Animatable(0f) }
+    val dragOffset = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(open) {
         if (open) {
             // The opening frame is the heaviest the menu has: every row
