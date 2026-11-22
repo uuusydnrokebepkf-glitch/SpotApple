@@ -529,87 +529,78 @@ fun <T : Any> IosMenuPopover(
             // and the GPU draws a rounded rect's straight off, where a path's
             // is a mask the size of the panel rasterized on the CPU — again
             // at each new scale, every frame of the growth.
-            Box(Modifier.iosMenuShadow(IosMenuShadowShape))
+Box(Modifier.iosMenuShadow(IosMenuShadowShape))
+Box(
+    Modifier
+        // Taps between rows land on the panel, not the scrim under it.
+        .pointerInput(Unit) {}
+        .iosMenuPanel(
+            translucent = true,
+            backdrop = backdrop,
+            hazeState = hazeState,
+            castsShadow = false,
+        ),
+    propagateMinConstraints = true,
+) {
+    Column(
+        Modifier.then(
+            if (dark && !plain) {
+                Modifier.additiveChrome(true)
+            } else {
+                Modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            }
+        )
+    ) {
+        // --- TAMBAHAN: GARIS DRAG HANDLE ---
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp) // Area sentuh buat narik
+                .pointerInput(open) {
+                    if (!open) return@pointerInput
+                    detectVerticalDragGestures(
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            // Cuma bisa ditarik ke bawah
+                            scope.launch { 
+                                dragOffset.snapTo((dragOffset.value + dragAmount).coerceAtLeast(0f)) 
+                            }
+                        },
+                        onDragEnd = {
+                            if (dragOffset.value > 100.dp.toPx()) {
+                                onDismiss() // Tarik jauh = tutup menu
+                            } else {
+                                // Tarik dikit = mantul balik (Efek iOS)
+                                scope.launch { 
+                                    dragOffset.animateTo(
+                                        targetValue = 0f, 
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                    ) 
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch { dragOffset.animateTo(0f, spring()) }
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // Garis visualnya (abu-abu kecil)
             Box(
                 Modifier
-                    // Taps between rows land on the panel, not the scrim under it.
-                    .pointerInput(Unit) {}
-                    .iosMenuPanel(
-                        translucent = true,
-                        backdrop = backdrop,
-                        hazeState = hazeState,
-                        castsShadow = false,
-                    ),
-                propagateMinConstraints = true,
-            ) {
-                // The rows in a layer of their own. The frost under them is
-                // drawn again on every frame of the growth — it holds the
-                // still in place while the panel scales over it — and drawn
-                // in the same layer, every label and glyph went with it, each
-                // frame at a new scale: rasterized again and uploaded again on
-                // the render thread. Apart, they are drawn once, full size,
-                // and only scaled. On a dark panel that layer is the blend's
-                // own, added onto the frost; on a light one it would wash the
-                // dark labels out, so it stays plain.
-                Column(
-                    Modifier
-                        .then(
-                            if (dark && !plain) {
-                                Modifier.additiveChrome(true)
-                            } else {
-                                Modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                            },
-                        )
-                        .padding(vertical = 8.dp),
-                ) {
-                    content(menuItem)
-                }
-            }
-        },
-    ) { measurables, constraints ->
-        val width = constraints.maxWidth
-        val height = constraints.maxHeight
-        val margin = 14.dp.roundToPx()
-        val top = insets.getTop(this) + 8.dp.roundToPx()
-        val bottom = height - insets.getBottom(this) - 12.dp.roundToPx()
-
-        val scrimPlaceable = measurables[0].measure(Constraints.fixed(width, height))
-        val panelWidth = IosMenuWidth.roundToPx().coerceAtMost(width - margin * 2)
-        val panel = measurables[2].measure(
-            Constraints(minWidth = panelWidth, maxWidth = panelWidth, maxHeight = (bottom - top).coerceAtLeast(0)),
-        )
-        val shadowPlate = measurables[1].measure(Constraints.fixed(panel.width, panel.height))
-        val anchorBounds = menuAnchor?.translate(-overlayOffset)
-        val right = anchorBounds?.right?.roundToInt() ?: (width - margin)
-        val panelX = (right - panel.width)
-            .coerceIn(margin, (width - margin - panel.width).coerceAtLeast(margin))
-        val lowest = (bottom - panel.height).coerceAtLeast(top)
-        val hangsDown = anchorBounds != null && anchorBounds.center.y < height / 2f
-        val panelY = if (hangsDown) anchorBounds.top.roundToInt().coerceIn(top, lowest) else lowest
-
-        val growth: GraphicsLayerScope.() -> Unit = {
-            val p = progress.value
-            alpha = (p * 2.5f).coerceIn(0f, 1f)
-            if (!reduceMotion) {
-                transformOrigin = TransformOrigin(1f, if (hangsDown) 0f else 1f)
-                val scale = lerp(0.3f, 1f, p)
-                scaleX = scale
-                scaleY = scale
-            }
+                    .width(36.dp)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(if (dark) Color.White.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f))
+            )
         }
-        layout(width, height) {
-            scrimPlaceable.place(0, 0)
-            shadowPlate.placeWithLayer(panelX, panelY, layerBlock = growth)
-            panel.placeWithLayer(panelX, panelY) {
-                growth()
-                // Drawn full size into a layer of its own, and only that
-                // picture scaled. Scaled as it was drawn, the panel's
-                // continuous corners — a path, not a rounded rect — were
-                // rasterized again on the CPU for its clips and rim at every
-                // new scale, and uploaded again, frame after frame of the
-                // growth. At one size the masks are made once and kept.
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
+        // -----------------------------------
+
+        // Bungkus konten menu dengan padding
+        Column(Modifier.padding(vertical = 8.dp, horizontal = 0.dp)) {
+            content(menuItem)
         }
     }
 }
+          
