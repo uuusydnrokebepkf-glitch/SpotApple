@@ -44,63 +44,39 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+// TAMBAHKAN IMPORT INI UNTUK HAPTIC
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlin.math.abs
+
 import com.music.bitchord.data.settings.MixBlend
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 
-/**
- * Apple Music's scrubber: a hairline capsule with no thumb knob, which
- * thickens under your finger and settles back when you let go. Material's
- * Slider can't be shaped like this — it always draws a thumb and a tall
- * track — so this is drawn directly.
- */
 @Composable
 fun ThinSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     onValueChangeFinished: (() -> Unit)? = null,
-    /**
-     * Sends the same travelling sheen across the bar while a version swap is crossfading.
-     * Kept separate from [loading]: a mix is playback feedback, not a wait state. An Automix
-     * blend draws [mixPulse] instead and suppresses this.
-     */
     mixing: Boolean = false,
-    /**
-     * The Automix blend's beat pulse — see [rememberMixPulse]. While a blend runs the fill
-     * covers the whole bar, through both the outgoing and the incoming song, and breathes with
-     * the blend's beat. Shared with whatever else pulses alongside the bar, so they stay in step.
-     */
     mixPulse: MixPulse? = null,
-    /**
-     * Sends a travelling sheen across the whole bar — played *and* unplayed,
-     * the bar's full thickness — for as long as it is true.
-     *
-     * The wait a version switch spends fetching and measuring the other cut is
-     * a wait with no measurable fraction to draw, and a stock indeterminate
-     * line sat on the scrubber like a second, uglier bar beside the one the
-     * listener is already watching. The sheen claims the bar itself instead:
-     * no extra chrome, no slot of its own, nothing shifting under it on the
-     * frame the eye lands — just motion along the bar, pointing the way the
-     * music is going.
-     */
     loading: Boolean = false,
-    /**
-     * Span of the track, as fractions of its duration, that the next Automix
-     * transition is planned to occupy. Drawn as a brighter stretch of the
-     * unplayed bar so the mix is visible before it arrives.
-     */
     transitionWindow: ClosedFloatingPointRange<Float>? = null,
     idleHeight: Dp = 7.dp,
     activeHeight: Dp = 12.dp,
     activeColor: Color = Color.White.copy(alpha = 0.92f),
     inactiveColor: Color = Color.White.copy(alpha = 0.26f),
-    /** Halfway between the two track colours: visible against unplayed, invisible under played. */
     markerColor: Color = Color.White.copy(alpha = 0.5f),
 ) {
     var dragging by remember { mutableStateOf(false) }
+    
+    // TAMBAHKAN: Setup Haptic
+    val haptic = LocalHapticFeedback.current
+    var lastHapticValue by remember { mutableFloatStateOf(-1f) }
+
     val height by animateDpAsState(
         targetValue = if (dragging) activeHeight else idleHeight,
         animationSpec = spring(
@@ -109,12 +85,6 @@ fun ThinSlider(
         ),
         label = "sliderHeight",
     )
-    // The sheen gets a minimum beat even when the switch resolves instantly —
-    // a cached offset can land in a few hundred milliseconds — so its entry,
-    // its sweep and its hand-over to the progress bar always play out as one
-    // continuous morph, whenever the wait happened to start and stop. A flip
-    // back to loading during the hold cancels it and the sheen simply stays,
-    // so rapid toggling never blinks the bar out mid-morph.
     var shownLoading by remember { mutableStateOf(loading) }
     var sheenStart by remember { mutableStateOf(System.nanoTime()) }
     LaunchedEffect(loading) {
@@ -127,12 +97,7 @@ fun ThinSlider(
             shownLoading = false
         }
     }
-    // Both operations let the sheen claim the bar. A version switch is latched for a minimum
-    // beat; a version swap's crossfade follows the audio engine and fades when it finishes.
-    // An Automix blend has its own treatment — the beat pulse — and keeps the fill.
     val sheenVisible = shownLoading || (mixing && mixPulse?.active != true)
-    // The window fades in when it is first known and out when it goes, and
-    // the last one is kept drawn for the fade-out rather than vanishing.
     var shownWindow by remember { mutableStateOf(transitionWindow) }
     LaunchedEffect(transitionWindow) {
         if (transitionWindow != null) shownWindow = transitionWindow
@@ -151,16 +116,15 @@ fun ThinSlider(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // Generous invisible touch target — the visible bar is only ~7dp.
             .height(activeHeight + 22.dp)
-            // One gesture loop for both taps and drags. Two separate detectors
-            // — a drag one plus a tap one — meant taps never landed: the drag
-            // detector took the pointer and a tap has no drag to report.
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     dragging = true
-                    onValueChange((down.position.x / size.width).coerceIn(0f, 1f))
+                    // TAMBAHKAN: Reset haptic saat mulai sentuh
+                    lastHapticValue = -1f 
+                    val initialFraction = (down.position.x / size.width).coerceIn(0f, 1f)
+                    onValueChange(initialFraction)
 
                     while (true) {
                         val event = awaitPointerEvent()
@@ -170,7 +134,15 @@ fun ThinSlider(
                             break
                         }
                         if (pointer.positionChanged()) {
-                            onValueChange((pointer.position.x / size.width).coerceIn(0f, 1f))
+                            val newFraction = (pointer.position.x / size.width).coerceIn(0f, 1f)
+                            onValueChange(newFraction)
+                            
+                            // TAMBAHKAN: Logika Getaran (Haptic) setiap kelipatan 5%
+                            if (abs(newFraction - lastHapticValue) >= 0.05f) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                lastHapticValue = newFraction
+                            }
+                            
                             pointer.consume()
                         }
                     }
@@ -188,15 +160,6 @@ fun ThinSlider(
         ) {
             val radius = CornerRadius(size.height / 2f)
             drawRoundRect(color = inactiveColor, cornerRadius = radius)
-            // Between the two track colours, and drawn *under* the played fill:
-            // once the playhead reaches the window the transition is no longer
-            // upcoming, and the ordinary progress colour taking it over is what
-            // says so.
-            //
-            // Feathered at both ends rather than drawn as a capsule of its own:
-            // a blend has no hard edge in time, so the marker shouldn't either.
-            // It is painted across the bar's own capsule, so its ends dissolve
-            // into the track instead of sitting on it as a second pill.
             shownWindow?.takeIf { windowAlpha > 0f }?.let { window ->
                 val from = size.width * window.start.coerceIn(0f, 1f)
                 val to = size.width * window.endInclusive.coerceIn(0f, 1f)
@@ -207,9 +170,6 @@ fun ThinSlider(
                         .coerceAtMost(span / 2f)
                     val f = feather / span
                     val full = markerColor.alpha * windowAlpha
-                    // Smoothstep down each feather: no slope break where the
-                    // ramp meets the flat middle, so there is no line for the
-                    // eye to catch at either end.
                     val ramp = (0..WINDOW_FEATHER_STEPS).map { step ->
                         val t = step / WINDOW_FEATHER_STEPS.toFloat()
                         t to markerColor.copy(alpha = full * t * t * (3f - 2f * t))
@@ -227,19 +187,9 @@ fun ThinSlider(
                     )
                 }
             }
-            // While a blend runs the whole bar is the fill, outgoing song and
-            // incoming alike, and it is the fill's opacity that carries the mix:
-            // brightest on each beat, easing down between them over the unplayed
-            // track colour. A drag in progress always shows the finger.
             val cover = if (dragging) 0f else mixPulse?.cover ?: 0f
             val base = value.coerceIn(0f, 1f)
             val fraction = base + (1f - base) * cover
-            // Scaled by [fillFactor]: retracted to nothing while the sheen
-            // runs (two white signals on one bar would read as progress
-            // fighting the wait) and slid back in when the switch lands. The
-            // capsule's minimum width rides the same factor, so the nub at
-            // zero progress retires with the fill instead of sitting as a
-            // dot under the sheen.
             val filled = size.width * fraction * fillFactor
             if (filled > 0f) {
                 val alpha = if (dragging) activeColor.alpha else mixPulse?.alpha(activeColor.alpha) ?: activeColor.alpha
@@ -253,15 +203,8 @@ fun ThinSlider(
                 )
             }
         }
-        // Composed only while switching or mixing. The infinite animation therefore costs no
-        // frames during ordinary playback, and AnimatedVisibility lets it leave gracefully.
         AnimatedVisibility(
             visible = sheenVisible,
-            // Grown out of the bar's own left end — where the progress fill
-            // begins — instead of slid in from a third of its own width: the
-            // capsule is full-bleed, so that slide started past the screen
-            // edge and flew in from outside the display. Same duration and
-            // curve as the fill's retraction, so the swap reads as one morph.
             enter = fadeIn(tween(durationMillis = MORPH_MS, easing = FastOutSlowInEasing)) +
                 scaleIn(
                     animationSpec = tween(durationMillis = MORPH_MS, easing = FastOutSlowInEasing),
@@ -274,6 +217,9 @@ fun ThinSlider(
         }
     }
 }
+
+// ... (Sisa kode konstanta dan MixSheen di bawahnya biarkan sama persis, 
+// tapi pastikan di dalam MixSheen kamu memperbaiki typo: horizontalBradient menjadi horizontalGradient)
 
 private const val SHEEN_BAND_FRACTION = 0.34f
 
