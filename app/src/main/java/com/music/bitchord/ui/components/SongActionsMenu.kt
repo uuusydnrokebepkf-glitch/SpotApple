@@ -72,6 +72,10 @@ import com.music.bitchord.ui.theme.ArtworkPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 
 /**
  * Long-press menu for a track, in the shape music apps normally use.
@@ -415,8 +419,52 @@ fun SongActionsMenu(
         }
     }
 
-    CompositionLocalProvider(LocalActionRowStyle provides ActionRowStyle.Menu) {
-        Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+        // 1. Bikin state buat nyimpen posisi jari
+    val dragState = remember { IosMenuDragState() }
+
+    CompositionLocalProvider(
+        LocalActionRowStyle provides ActionRowStyle.Menu,
+        // 2. Masukin state-nya biar IosMenuRow bisa nyala
+        LocalIosMenuDragState provides dragState
+    ) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                // 3. Deteksi geseran jari (Drag to Select)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var isDragging = false
+                        val touchSlop = viewConfiguration.touchSlop
+                        var dragStartY = down.position.y
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
+                            if (change.positionChanged()) {
+                                if (!isDragging) {
+                                    if (kotlin.math.abs(change.position.y - dragStartY) > touchSlop) {
+                                        isDragging = true
+                                    }
+                                }
+                                if (isDragging) {
+                                    change.consume()
+                                    dragState.update(change.position.y)
+                                }
+                            }
+
+                            if (!change.pressed) {
+                                if (isDragging) {
+                                    dragState.release()
+                                }
+                                break
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                }
+        ) {
             // The player's menu has the sleep timer, and swaps its rows for
             // the picker in place.
             if (pickingSleepTimer) {
@@ -427,6 +475,7 @@ fun SongActionsMenu(
         }
     }
 }
+    
 
 /**
  * Row density and layout, set by whichever surface the rows are drawn on: the
