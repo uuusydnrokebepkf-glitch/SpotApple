@@ -486,6 +486,7 @@ fun <T : Any> IosMenuPopover(
             )
         } else {
             progress.animateTo(0f, tween(durationMillis = if (reduceMotion) 100 else 170, easing = FastOutSlowInEasing))
+            dragOffset.snapTo(0f)
             last = null
         }
     }
