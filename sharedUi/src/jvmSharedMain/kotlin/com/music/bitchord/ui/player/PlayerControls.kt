@@ -124,7 +124,6 @@ import com.music.bitchord.data.model.Song
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
-import com.music.bitchord.ui.player.AppleStyleSlider
 /**
  * How long the shuffle glyph ignores further taps after one lands.
  *
