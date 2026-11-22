@@ -321,6 +321,26 @@ fun RowScope.IosMenuQuickAction(
  * Pressing paints a rounded fill under the row rather than a ripple, the way
  * the panel's own platform does it.
  */
+// --- TAMBAHKAN KODE INI DI ATAS @Composable fun IosMenuRow ---
+class IosMenuDragState {
+    var highlightedBounds by mutableStateOf<Rect?>(null)
+    var onReleaseAction by mutableStateOf<(() -> Unit)?>(null)
+    val rowBounds = mutableMapOf<Rect, () -> Unit>()
+
+    fun update(y: Float) {
+        highlightedBounds = rowBounds.keys.firstOrNull { y >= it.top && y <= it.bottom }
+        onReleaseAction = highlightedBounds?.let { rowBounds[it] }
+    }
+
+    fun release() {
+        onReleaseAction?.invoke()
+        highlightedBounds = null
+        onReleaseAction = null
+    }
+}
+val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<IosMenuDragState?> { null }
+// -------------------------------------------------------------
+ 
 @Composable
 fun IosMenuRow(
     label: String,
@@ -340,12 +360,30 @@ fun IosMenuRow(
     val pressed by interaction.collectIsPressedAsState()
     val alpha = if (enabled) 1f else 0.4f
     val foreground = labelColor ?: colors.label
+
+    // --- TAMBAHAN BARU: Logika Deteksi Geser ---
+    val dragState = LocalIosMenuDragState.current
+    var myBounds by remember { mutableStateOf<Rect?>(null) }
+    val isHighlighted = dragState?.highlightedBounds != null && myBounds == dragState.highlightedBounds
+    // --------------------------------------------
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // --- TAMBAHAN BARU: Simpan posisi baris ini ---
+            .onGloballyPositioned { coords ->
+                val bounds = coords.boundsInRoot()
+                myBounds = bounds
+                if (onClick != null && enabled) {
+                    dragState?.rowBounds?.put(bounds, onClick)
+                }
+            }
+            // ------------------------------------------------
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(if (pressed) colors.pressed else Color.Transparent)
+            // --- UBAH BACKGROUND: Biar nyala pas di-highlight ---
+            .background(if (pressed || isHighlighted) colors.pressed else Color.Transparent)
+            // --------------------------------------------------
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -362,6 +400,7 @@ fun IosMenuRow(
             .padding(start = 12.dp, end = 14.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // ... (Sisa isi Row: Box icon, Column text, dll biarin aja jangan dihapus) ...
         Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
             if (icon != null) {
                 Icon(
