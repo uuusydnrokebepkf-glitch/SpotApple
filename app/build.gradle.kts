@@ -101,7 +101,7 @@ android {
             "ADDON_AUTH_URL",
             "\"${addonAuthServer.replace("\\", "\\\\").replace("\"", "\\\"")}\"",
         )
-        buildConfigField("String", "UPDATE_APK_PREFIX", "\"BitChord-\"")
+        buildConfigField("String", "UPDATE_APK_PREFIX", "\"app-prod-\"")
     }
 
     splits {
