@@ -603,4 +603,48 @@ Box(
         }
     }
 }
-          
+) { measurables, constraints ->
+    val width = constraints.maxWidth
+    val height = constraints.maxHeight
+    val margin = 14.dp.roundToPx()
+    val top = insets.getTop(this) + 8.dp.roundToPx()
+    val bottom = height - insets.getBottom(this) - 12.dp.roundToPx()
+
+    val scrimPlaceable = measurables[0].measure(Constraints.fixed(width, height))
+    val panelWidth = IosMenuWidth.roundToPx().coerceAtMost(width - margin * 2)
+    val panel = measurables[2].measure(
+        Constraints(minWidth = panelWidth, maxWidth = panelWidth, maxHeight = (bottom - top).coerceAtLeast(0)),
+    )
+    val shadowPlate = measurables[1].measure(Constraints.fixed(panel.width, panel.height))
+    val anchorBounds = menuAnchor?.translate(-overlayOffset)
+    val right = anchorBounds?.right?.roundToInt() ?: (width - margin)
+    val panelX = (right - panel.width)
+        .coerceIn(margin, (width - margin - panel.width).coerceAtLeast(margin))
+    val lowest = (bottom - panel.height).coerceAtLeast(top)
+    val hangsDown = anchorBounds != null && anchorBounds.center.y < height / 2f
+    val panelY = if (hangsDown) anchorBounds.top.roundToInt().coerceIn(top, lowest) else lowest
+
+    // INI DIA VAL GROWTH-NYA
+    val growth: GraphicsLayerScope.() -> Unit = {
+        val p = progress.value
+        alpha = (p * 2.5f).coerceIn(0f, 1f)
+        
+        // TAMBAHAN KITA: Bikin bayangan & panel ikut turun pas ditarik
+        translationY = dragOffset.value 
+
+        if (!reduceMotion) {
+            transformOrigin = TransformOrigin(1f, if (hangsDown) 0f else 1f)
+            val scale = lerp(0.3f, 1f, p)
+            scaleX = scale
+            scaleY = scale
+        }
+    }
+    layout(width, height) {
+        scrimPlaceable.place(0, 0)
+        shadowPlate.placeWithLayer(panelX, panelY, layerBlock = growth)
+        panel.placeWithLayer(panelX, panelY) {
+            growth()
+            compositingStrategy = CompositingStrategy.Offscreen
+        }
+    }
+}          
