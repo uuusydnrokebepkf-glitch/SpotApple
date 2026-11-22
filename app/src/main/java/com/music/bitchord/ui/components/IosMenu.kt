@@ -1,5 +1,7 @@
 package com.music.bitchord.ui.components
 
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import android.provider.Settings
 import com.music.bitchord.ui.player.PlayerBackHandler
