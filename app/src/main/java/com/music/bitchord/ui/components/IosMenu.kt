@@ -502,7 +502,7 @@ fun <T : Any> IosMenuPopover(
     val insets = WindowInsets.safeDrawing
     var overlayOffset by remember { mutableStateOf(Offset.Zero) }
 
-    Layout(
+        Layout(
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { overlayOffset = it.positionInWindow() }
@@ -523,130 +523,123 @@ fun <T : Any> IosMenuPopover(
                         onClick = onDismiss,
                     ),
             )
-            // The panel's shadow, cast by a plate of its own behind it: the
-            // panel is drawn into a layer of its own size (see the placement
-            // below), which would cut a shadow of its own off at its edges.
-            // Cast from a plain rounded rect: a shadow that size is a blur
-            // deep enough that the continuous corner can't be told from it,
-            // and the GPU draws a rounded rect's straight off, where a path's
-            // is a mask the size of the panel rasterized on the CPU — again
-            // at each new scale, every frame of the growth.
-Box(Modifier.iosMenuShadow(IosMenuShadowShape))
-Box(
-    Modifier
-        // Taps between rows land on the panel, not the scrim under it.
-        .pointerInput(Unit) {}
-        .iosMenuPanel(
-            translucent = true,
-            backdrop = backdrop,
-            hazeState = hazeState,
-            castsShadow = false,
-        ),
-    propagateMinConstraints = true,
-) {
-    Column(
-        Modifier.then(
-            if (dark && !plain) {
-                Modifier.additiveChrome(true)
-            } else {
-                Modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            }
-        )
-    ) {
-        // --- TAMBAHAN: GARIS DRAG HANDLE ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(28.dp) // Area sentuh buat narik
-                .pointerInput(open) {
-                    if (!open) return@pointerInput
-                    detectVerticalDragGestures(
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            // Cuma bisa ditarik ke bawah
-                            scope.launch { 
-                                dragOffset.snapTo((dragOffset.value + dragAmount).coerceAtLeast(0f)) 
-                            }
-                        },
-                        onDragEnd = {
-                            if (dragOffset.value > 100.dp.toPx()) {
-                                onDismiss() // Tarik jauh = tutup menu
-                            } else {
-                                // Tarik dikit = mantul balik (Efek iOS)
-                                scope.launch { 
-                                    dragOffset.animateTo(
-                                        targetValue = 0f, 
-                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                                    ) 
-                                }
-                            }
-                        },
-                        onDragCancel = {
-                            scope.launch { dragOffset.animateTo(0f, spring()) }
-                        }
-                    )
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            // Garis visualnya (abu-abu kecil)
+            
+            Box(Modifier.iosMenuShadow(IosMenuShadowShape))
+            
             Box(
                 Modifier
-                    .width(36.dp)
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(if (dark) Color.White.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f))
-            )
-        }
-        // -----------------------------------
+                    // Taps between rows land on the panel, not the scrim under it.
+                    .pointerInput(Unit) {}
+                    .iosMenuPanel(
+                        translucent = true,
+                        backdrop = backdrop,
+                        hazeState = hazeState,
+                        castsShadow = false,
+                    ),
+                propagateMinConstraints = true,
+            ) {
+                Column(
+                    Modifier.then(
+                        if (dark && !plain) {
+                            Modifier.additiveChrome(true)
+                        } else {
+                            Modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        }
+                    )
+                ) {
+                    // --- GARIS DRAG HANDLE ---
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp) // Area sentuh buat narik
+                            .pointerInput(open) {
+                                if (!open) return@pointerInput
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        scope.launch { 
+                                            dragOffset.snapTo((dragOffset.value + dragAmount).coerceAtLeast(0f)) 
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        if (dragOffset.value > 100.dp.toPx()) {
+                                            onDismiss()
+                                        } else {
+                                            scope.launch { 
+                                                dragOffset.animateTo(
+                                                    targetValue = 0f, 
+                                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                                ) 
+                                            }
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        scope.launch { dragOffset.animateTo(0f, spring()) }
+                                    }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Garis visualnya (abu-abu kecil)
+                        Box(
+                            Modifier
+                                .width(36.dp)
+                                .height(5.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(if (dark) Color.White.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f))
+                        )
+                    }
+                    // -----------------------------------
 
-        // Bungkus konten menu dengan padding
-        Column(Modifier.padding(vertical = 8.dp, horizontal = 0.dp)) {
-            content(menuItem)
+                    // Konten menu
+                    Column(Modifier.padding(vertical = 8.dp, horizontal = 0.dp)) {
+                        content(menuItem)
+                    }
+                }
+            }
+        } // <--- TUTUP CONTENT DI SINI
+    ) { measurables, constraints -> // <--- LANGSUNG SAMBUNG KE SINI
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val margin = 14.dp.roundToPx()
+        val top = insets.getTop(this) + 8.dp.roundToPx()
+        val bottom = height - insets.getBottom(this) - 12.dp.roundToPx()
+
+        val scrimPlaceable = measurables[0].measure(Constraints.fixed(width, height))
+        val panelWidth = IosMenuWidth.roundToPx().coerceAtMost(width - margin * 2)
+        val panel = measurables[2].measure(
+            Constraints(minWidth = panelWidth, maxWidth = panelWidth, maxHeight = (bottom - top).coerceAtLeast(0)),
+        )
+        val shadowPlate = measurables[1].measure(Constraints.fixed(panel.width, panel.height))
+        val anchorBounds = menuAnchor?.translate(-overlayOffset)
+        val right = anchorBounds?.right?.roundToInt() ?: (width - margin)
+        val panelX = (right - panel.width)
+            .coerceIn(margin, (width - margin - panel.width).coerceAtLeast(margin))
+        val lowest = (bottom - panel.height).coerceAtLeast(top)
+        val hangsDown = anchorBounds != null && anchorBounds.center.y < height / 2f
+        val panelY = if (hangsDown) anchorBounds.top.roundToInt().coerceIn(top, lowest) else lowest
+
+        val growth: GraphicsLayerScope.() -> Unit = {
+            val p = progress.value
+            alpha = (p * 2.5f).coerceIn(0f, 1f)
+            
+            // TAMBAHAN KITA: Bikin bayangan & panel ikut turun pas ditarik
+            translationY = dragOffset.value 
+
+            if (!reduceMotion) {
+                transformOrigin = TransformOrigin(1f, if (hangsDown) 0f else 1f)
+                val scale = lerp(0.3f, 1f, p)
+                scaleX = scale
+                scaleY = scale
+            }
+        }
+        layout(width, height) {
+            scrimPlaceable.place(0, 0)
+            shadowPlate.placeWithLayer(panelX, panelY, layerBlock = growth)
+            panel.placeWithLayer(panelX, panelY) {
+                growth()
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
         }
     }
 }
-) { measurables, constraints ->
-    val width = constraints.maxWidth
-    val height = constraints.maxHeight
-    val margin = 14.dp.roundToPx()
-    val top = insets.getTop(this) + 8.dp.roundToPx()
-    val bottom = height - insets.getBottom(this) - 12.dp.roundToPx()
-
-    val scrimPlaceable = measurables[0].measure(Constraints.fixed(width, height))
-    val panelWidth = IosMenuWidth.roundToPx().coerceAtMost(width - margin * 2)
-    val panel = measurables[2].measure(
-        Constraints(minWidth = panelWidth, maxWidth = panelWidth, maxHeight = (bottom - top).coerceAtLeast(0)),
-    )
-    val shadowPlate = measurables[1].measure(Constraints.fixed(panel.width, panel.height))
-    val anchorBounds = menuAnchor?.translate(-overlayOffset)
-    val right = anchorBounds?.right?.roundToInt() ?: (width - margin)
-    val panelX = (right - panel.width)
-        .coerceIn(margin, (width - margin - panel.width).coerceAtLeast(margin))
-    val lowest = (bottom - panel.height).coerceAtLeast(top)
-    val hangsDown = anchorBounds != null && anchorBounds.center.y < height / 2f
-    val panelY = if (hangsDown) anchorBounds.top.roundToInt().coerceIn(top, lowest) else lowest
-
-    // INI DIA VAL GROWTH-NYA
-    val growth: GraphicsLayerScope.() -> Unit = {
-        val p = progress.value
-        alpha = (p * 2.5f).coerceIn(0f, 1f)
-        
-        // TAMBAHAN KITA: Bikin bayangan & panel ikut turun pas ditarik
-        translationY = dragOffset.value 
-
-        if (!reduceMotion) {
-            transformOrigin = TransformOrigin(1f, if (hangsDown) 0f else 1f)
-            val scale = lerp(0.3f, 1f, p)
-            scaleX = scale
-            scaleY = scale
-        }
-    }
-    layout(width, height) {
-        scrimPlaceable.place(0, 0)
-        shadowPlate.placeWithLayer(panelX, panelY, layerBlock = growth)
-        panel.placeWithLayer(panelX, panelY) {
-            growth()
-            compositingStrategy = CompositingStrategy.Offscreen
-        }
-    }
-}          
