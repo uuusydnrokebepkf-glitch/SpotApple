@@ -479,7 +479,7 @@ fun SongActionsMenu(
                         .padding(horizontal = 8.dp)
                         .height(with(density) { animatedHeight.toDp() })
                         // EFEK MEMBENGKAK SEDIKIT (Khas iOS)
-                        .androidx.compose.ui.graphics.graphicsLayer {
+                        .graphicsLayer {
                             scaleX = 1.02f
                             scaleY = 1.02f
                         }
