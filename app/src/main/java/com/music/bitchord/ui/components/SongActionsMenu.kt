@@ -427,50 +427,85 @@ fun SongActionsMenu(
         // 2. Masukin state-nya biar IosMenuRow bisa nyala
         LocalIosMenuDragState provides dragState
     ) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                // 3. Deteksi geseran jari (Drag to Select)
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        var isDragging = false
-                        val touchSlop = viewConfiguration.touchSlop
-                        var dragStartY = down.position.y
+    // 1. Bikin state & scope
+    val dragState = remember { IosMenuDragState() }
+    val scope = rememberCoroutineScope()
+    var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
 
-                        do {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+    CompositionLocalProvider(
+        LocalActionRowStyle provides ActionRowStyle.Menu,
+        LocalIosMenuDragState provides dragState
+    ) {
+        // BUNGKUS PAKAI BOX BIAR KACA BISA MELAYANG
+        Box(modifier = modifier.fillMaxWidth()) {
+            
+            // --- KACA MELAYANG (LIQUID GLASS) ---
+            if (dragState.isHighlightVisible && dragState.highlightedBounds != null) {
+                val y = dragState.highlightY.value - columnOffset.y
+                Box(
+                    modifier = Modifier
+                        .zIndex(1f) // Gambar di atas
+                        .offset { androidx.compose.ui.unit.IntOffset(0, y.roundToInt()) }
+                        .fillMaxWidth()
+                        .height(with(density) { dragState.highlightHeight.value.toDp() })
+                        .padding(horizontal = 8.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                )
+            }
+            // ------------------------------------
 
-                            if (change.positionChanged()) {
-                                if (!isDragging) {
-                                    if (kotlin.math.abs(change.position.y - dragStartY) > touchSlop) {
-                                        isDragging = true
+            // Kolom Menu Asli
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { columnOffset = it.positionInRoot() }
+                    .verticalScroll(rememberScrollState())
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            var isDragging = false
+                            val touchSlop = viewConfiguration.touchSlop
+                            var dragStartY = down.position.y
+
+                            // Langsung munculin kaca
+                            dragState.update(down.position.y + columnOffset.y, scope)
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
+                                if (change.positionChanged()) {
+                                    if (!isDragging) {
+                                        if (kotlin.math.abs(change.position.y - dragStartY) > touchSlop) {
+                                            isDragging = true
+                                        }
+                                    }
+                                    if (isDragging) {
+                                        change.consume()
+                                        dragState.update(change.position.y + columnOffset.y, scope)
                                     }
                                 }
-                                if (isDragging) {
-                                    change.consume()
-                                    dragState.update(change.position.y)
-                                }
-                            }
 
-                            if (!change.pressed) {
-                                if (isDragging) {
-                                    dragState.release()
+                                if (!change.pressed) {
+                                    if (isDragging) {
+                                        dragState.release() // Lepas = eksekusi
+                                    } else {
+                                        dragState.reset() // Ngetuk = batalin kaca
+                                    }
+                                    break
                                 }
-                                break
-                            }
-                        } while (event.changes.any { it.pressed })
+                            } while (event.changes.any { it.pressed })
+                        }
                     }
+            ) {
+                if (pickingSleepTimer) {
+                    SleepTimerPicker(palette = palette, onBack = { pickingSleepTimer = false })
+                } else {
+                    rows()
                 }
-        ) {
-            // The player's menu has the sleep timer, and swaps its rows for
-            // the picker in place.
-            if (pickingSleepTimer) {
-                SleepTimerPicker(palette = palette, onBack = { pickingSleepTimer = false })
-            } else {
-                rows()
             }
         }
     }
