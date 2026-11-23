@@ -428,9 +428,6 @@ fun SongActionsMenu(
         }
     }
 
-        // 1. Bikin state buat nyimpen posisi jari
-    val dragState = remember { IosMenuDragState() }
-
     // 1. Bikin state & scope
     val dragState = remember { IosMenuDragState() }
     val scope = rememberCoroutineScope()
