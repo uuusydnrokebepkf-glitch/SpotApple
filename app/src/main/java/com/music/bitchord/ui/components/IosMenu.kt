@@ -326,13 +326,26 @@ fun RowScope.IosMenuQuickAction(
 class IosMenuDragState {
     var highlightedBounds by mutableStateOf<Rect?>(null)
     var onReleaseAction by mutableStateOf<(() -> Unit)?>(null)
-    val rowBounds = mutableMapOf<Rect, () -> Unit>()
+    
+    // Pake ID unik biar pas di-scroll nggak ketuker barisnya
+    private val rows = mutableMapOf<String, Pair<Rect, () -> Unit>>()
+
+    fun registerRow(id: String, bounds: Rect, onClick: () -> Unit) {
+        rows[id] = bounds to onClick
+    }
+
+    fun unregisterRow(id: String) {
+        rows.remove(id)
+    }
 
     fun update(y: Float) {
-        val newBounds = rowBounds.keys.firstOrNull { y >= it.top && y <= it.bottom }
-        if (newBounds != null && newBounds != highlightedBounds) {
-            highlightedBounds = newBounds
-            onReleaseAction = rowBounds[newBounds]
+        val hit = rows.values.firstOrNull { y >= it.first.top && y <= it.first.bottom }
+        if (hit != null) {
+            val bounds = hit.first
+            if (bounds != highlightedBounds) {
+                highlightedBounds = bounds
+                onReleaseAction = hit.second
+            }
         }
     }
 
@@ -344,19 +357,6 @@ class IosMenuDragState {
     fun reset() {
         highlightedBounds = null
         onReleaseAction = null
-    }
-}
-val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<IosMenuDragState?> { null }
-
-    fun release() {
-        onReleaseAction?.invoke()
-        reset()
-    }
-
-    fun reset() {
-        highlightedBounds = null
-        onReleaseAction = null
-        isHighlightVisible = false
     }
 }
 val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<IosMenuDragState?> { null }
