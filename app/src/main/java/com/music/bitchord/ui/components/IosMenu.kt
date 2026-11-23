@@ -363,7 +363,17 @@ val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<Io
 
 @Composable
 fun IosMenuRow(
-    // ... parameter biarin aja ...
+    label: String,
+    icon: ImageVector?,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    value: String? = null,
+    iconTint: Color? = null,
+    labelColor: Color? = null,
+    valueColor: Color? = null,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = iosMenuColors()
     val interaction = remember { MutableInteractionSource() }
@@ -388,11 +398,9 @@ fun IosMenuRow(
                     dragState?.registerRow(rowId, coords.boundsInRoot(), onClick)
                 }
             }
-            // ... (sisa kode .padding, .clickable, dll biarin aja kayak sebelumnya)
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(14.dp))
-            // Cuma pakai 'pressed' buat efek klik biasa. Kaca melayangnya udah diurus di file SongActionsMenu.
-            .background(if (pressed) colors.pressed else Color.Transparent) 
+            .background(if (pressed) colors.pressed else Color.Transparent)
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -409,6 +417,7 @@ fun IosMenuRow(
             .padding(start = 12.dp, end = 14.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // ... (Sisa isi Row kayak Icon, Text, dll biarin aja kayak sebelumnya) ...
 
 
         // ... (Sisa isi Row: Box icon, Column text, dll biarin aja jangan dihapus) ...
