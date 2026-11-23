@@ -328,30 +328,25 @@ class IosMenuDragState {
     var onReleaseAction by mutableStateOf<(() -> Unit)?>(null)
     val rowBounds = mutableMapOf<Rect, () -> Unit>()
 
-    // --- STATE BUAT LIQUID GLASS ---
-    val highlightY = androidx.compose.animation.core.Animatable(0f)
-    val highlightHeight = androidx.compose.animation.core.Animatable(0f)
-    var isHighlightVisible by mutableStateOf(false)
-
-    fun update(y: Float, scope: kotlinx.coroutines.CoroutineScope) {
+    fun update(y: Float) {
         val newBounds = rowBounds.keys.firstOrNull { y >= it.top && y <= it.bottom }
         if (newBounds != null && newBounds != highlightedBounds) {
-            val wasNull = highlightedBounds == null
             highlightedBounds = newBounds
             onReleaseAction = rowBounds[newBounds]
-            isHighlightVisible = true
-
-            scope.launch {
-                if (wasNull) {
-                    highlightY.snapTo(newBounds.top)
-                    highlightHeight.snapTo(newBounds.height)
-                } else {
-                    launch { highlightY.animateTo(newBounds.top, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
-                    launch { highlightHeight.animateTo(newBounds.height, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
-                }
-            }
         }
     }
+
+    fun release() {
+        onReleaseAction?.invoke()
+        reset()
+    }
+
+    fun reset() {
+        highlightedBounds = null
+        onReleaseAction = null
+    }
+}
+val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<IosMenuDragState?> { null }
 
     fun release() {
         onReleaseAction?.invoke()
