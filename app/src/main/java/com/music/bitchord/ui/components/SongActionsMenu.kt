@@ -435,7 +435,6 @@ fun SongActionsMenu(
 
     // 1. Bikin state & scope
     val dragState = remember { IosMenuDragState() }
-    val scope = rememberCoroutineScope()
     var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     val density = androidx.compose.ui.platform.LocalDensity.current
 
@@ -477,7 +476,6 @@ fun SongActionsMenu(
                         .zIndex(1f) 
                         .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
                         .fillMaxWidth()
-                        // Padding 8.dp ini biar selebar baris menunya
                         .padding(horizontal = 8.dp)
                         .height(with(density) { animatedHeight.toDp() })
                         // EFEK MEMBENGKAK SEDIKIT (Khas iOS)
@@ -514,7 +512,7 @@ fun SongActionsMenu(
                             val touchSlop = viewConfiguration.touchSlop
                             var dragStartY = down.position.y
 
-                            // Langsung munculin kaca (tanpa scope lagi)
+                            // Langsung munculin kaca (TANPA SCOPE LAGI YA!)
                             dragState.update(down.position.y + columnOffset.y)
 
                             do {
@@ -529,6 +527,7 @@ fun SongActionsMenu(
                                     }
                                     if (isDragging) {
                                         change.consume()
+                                        // Geser kaca (TANPA SCOPE)
                                         dragState.update(change.position.y + columnOffset.y)
                                     }
                                 }
