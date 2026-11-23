@@ -431,11 +431,6 @@ fun SongActionsMenu(
         // 1. Bikin state buat nyimpen posisi jari
     val dragState = remember { IosMenuDragState() }
 
-    CompositionLocalProvider(
-        LocalActionRowStyle provides ActionRowStyle.Menu,
-        // 2. Masukin state-nya biar IosMenuRow bisa nyala
-        LocalIosMenuDragState provides dragState
-    ) {
     // 1. Bikin state & scope
     val dragState = remember { IosMenuDragState() }
     val scope = rememberCoroutineScope()
@@ -454,7 +449,7 @@ fun SongActionsMenu(
                 val y = dragState.highlightY.value - columnOffset.y
                 Box(
                     modifier = Modifier
-                        .zIndex(1f) // Gambar di atas
+                        .zIndex(1f) 
                         .offset { androidx.compose.ui.unit.IntOffset(0, y.roundToInt()) }
                         .fillMaxWidth()
                         .height(with(density) { dragState.highlightHeight.value.toDp() })
@@ -519,6 +514,11 @@ fun SongActionsMenu(
         }
     }
 }
+
+
+            
+
+
     
 
 /**
