@@ -434,6 +434,27 @@ fun SongActionsMenu(
     var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     val density = androidx.compose.ui.platform.LocalDensity.current
 
+    // --- KUNCI EFEK MULUS: Pakai animateFloatAsState biar Compose yang ngurus ---
+    val targetY = dragState.highlightedBounds?.top ?: 0f
+    val targetHeight = dragState.highlightedBounds?.height ?: 0f
+    
+    val animatedY by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = targetY,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "glassY"
+    )
+    val animatedHeight by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = targetHeight,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "glassHeight"
+    )
+
     CompositionLocalProvider(
         LocalActionRowStyle provides ActionRowStyle.Menu,
         LocalIosMenuDragState provides dragState
@@ -441,19 +462,36 @@ fun SongActionsMenu(
         // BUNGKUS PAKAI BOX BIAR KACA BISA MELAYANG
         Box(modifier = modifier.fillMaxWidth()) {
             
-            // --- KACA MELAYANG (LIQUID GLASS) ---
-            if (dragState.isHighlightVisible && dragState.highlightedBounds != null) {
-                val y = dragState.highlightY.value - columnOffset.y
+            // --- KACA MELAYANG (LIQUID GLASS APPLE) ---
+            if (dragState.highlightedBounds != null) {
+                val localY = animatedY - columnOffset.y
+                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                
                 Box(
                     modifier = Modifier
                         .zIndex(1f) 
-                        .offset { androidx.compose.ui.unit.IntOffset(0, y.roundToInt()) }
+                        .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
                         .fillMaxWidth()
-                        .height(with(density) { dragState.highlightHeight.value.toDp() })
+                        // Padding 8.dp ini biar selebar baris menunya
                         .padding(horizontal = 8.dp)
+                        .height(with(density) { animatedHeight.toDp() })
+                        // EFEK MEMBENGKAK SEDIKIT (Khas iOS)
+                        .androidx.compose.ui.graphics.graphicsLayer {
+                            scaleX = 1.02f
+                            scaleY = 1.02f
+                        }
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                        // EFEK KACA (Liquid Glass)
+                        .background(
+                            if (isDark) Color.White.copy(alpha = 0.15f) 
+                            else Color.Black.copy(alpha = 0.06f)
+                        )
+                        .border(
+                            0.5.dp, 
+                            if (isDark) Color.White.copy(alpha = 0.25f) 
+                            else Color.Black.copy(alpha = 0.1f), 
+                            RoundedCornerShape(14.dp)
+                        )
                 )
             }
             // ------------------------------------
@@ -471,8 +509,8 @@ fun SongActionsMenu(
                             val touchSlop = viewConfiguration.touchSlop
                             var dragStartY = down.position.y
 
-                            // Langsung munculin kaca
-                            dragState.update(down.position.y + columnOffset.y, scope)
+                            // Langsung munculin kaca (tanpa scope lagi)
+                            dragState.update(down.position.y + columnOffset.y)
 
                             do {
                                 val event = awaitPointerEvent()
@@ -486,7 +524,7 @@ fun SongActionsMenu(
                                     }
                                     if (isDragging) {
                                         change.consume()
-                                        dragState.update(change.position.y + columnOffset.y, scope)
+                                        dragState.update(change.position.y + columnOffset.y)
                                     }
                                 }
 
@@ -511,6 +549,7 @@ fun SongActionsMenu(
         }
     }
 }
+
 
 
             
