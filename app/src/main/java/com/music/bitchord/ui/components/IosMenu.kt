@@ -363,17 +363,7 @@ val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<Io
 
 @Composable
 fun IosMenuRow(
-    label: String,
-    icon: ImageVector?,
-    onClick: (() -> Unit)?,
-    modifier: Modifier = Modifier,
-    description: String? = null,
-    value: String? = null,
-    iconTint: Color? = null,
-    labelColor: Color? = null,
-    valueColor: Color? = null,
-    enabled: Boolean = true,
-    trailing: (@Composable () -> Unit)? = null,
+    // ... parameter biarin aja ...
 ) {
     val colors = iosMenuColors()
     val interaction = remember { MutableInteractionSource() }
@@ -381,19 +371,24 @@ fun IosMenuRow(
     val alpha = if (enabled) 1f else 0.4f
     val foreground = labelColor ?: colors.label
 
+    // --- TAMBAHAN ID UNIK ---
     val dragState = LocalIosMenuDragState.current
-    var myBounds by remember { mutableStateOf<Rect?>(null) }
+    val rowId = remember { java.util.UUID.randomUUID().toString() }
+    
+    // Hapus baris dari sistem kalau menunya ditutup
+    androidx.compose.runtime.DisposableEffect(rowId) {
+        onDispose { dragState?.unregisterRow(rowId) }
+    }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .onGloballyPositioned { coords ->
-                val bounds = coords.boundsInRoot()
-                myBounds = bounds
                 if (onClick != null && enabled) {
-                    dragState?.rowBounds?.put(bounds, onClick)
+                    dragState?.registerRow(rowId, coords.boundsInRoot(), onClick)
                 }
             }
+            // ... (sisa kode .padding, .clickable, dll biarin aja kayak sebelumnya)
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(14.dp))
             // Cuma pakai 'pressed' buat efek klik biasa. Kaca melayangnya udah diurus di file SongActionsMenu.
