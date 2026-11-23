@@ -328,20 +328,44 @@ class IosMenuDragState {
     var onReleaseAction by mutableStateOf<(() -> Unit)?>(null)
     val rowBounds = mutableMapOf<Rect, () -> Unit>()
 
-    fun update(y: Float) {
-        highlightedBounds = rowBounds.keys.firstOrNull { y >= it.top && y <= it.bottom }
-        onReleaseAction = highlightedBounds?.let { rowBounds[it] }
+    // --- STATE BUAT LIQUID GLASS ---
+    val highlightY = androidx.compose.animation.core.Animatable(0f)
+    val highlightHeight = androidx.compose.animation.core.Animatable(0f)
+    var isHighlightVisible by mutableStateOf(false)
+
+    fun update(y: Float, scope: kotlinx.coroutines.CoroutineScope) {
+        val newBounds = rowBounds.keys.firstOrNull { y >= it.top && y <= it.bottom }
+        if (newBounds != null && newBounds != highlightedBounds) {
+            val wasNull = highlightedBounds == null
+            highlightedBounds = newBounds
+            onReleaseAction = rowBounds[newBounds]
+            isHighlightVisible = true
+
+            scope.launch {
+                if (wasNull) {
+                    highlightY.snapTo(newBounds.top)
+                    highlightHeight.snapTo(newBounds.height)
+                } else {
+                    launch { highlightY.animateTo(newBounds.top, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
+                    launch { highlightHeight.animateTo(newBounds.height, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
+                }
+            }
+        }
     }
 
     fun release() {
         onReleaseAction?.invoke()
+        reset()
+    }
+
+    fun reset() {
         highlightedBounds = null
         onReleaseAction = null
+        isHighlightVisible = false
     }
 }
 val LocalIosMenuDragState = androidx.compose.runtime.staticCompositionLocalOf<IosMenuDragState?> { null }
-// -------------------------------------------------------------
- 
+
 @Composable
 fun IosMenuRow(
     label: String,
@@ -362,16 +386,12 @@ fun IosMenuRow(
     val alpha = if (enabled) 1f else 0.4f
     val foreground = labelColor ?: colors.label
 
-    // --- TAMBAHAN BARU: Logika Deteksi Geser ---
     val dragState = LocalIosMenuDragState.current
     var myBounds by remember { mutableStateOf<Rect?>(null) }
-    val isHighlighted = dragState?.highlightedBounds != null && myBounds == dragState.highlightedBounds
-    // --------------------------------------------
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            // --- TAMBAHAN BARU: Simpan posisi baris ini ---
             .onGloballyPositioned { coords ->
                 val bounds = coords.boundsInRoot()
                 myBounds = bounds
@@ -379,12 +399,10 @@ fun IosMenuRow(
                     dragState?.rowBounds?.put(bounds, onClick)
                 }
             }
-            // ------------------------------------------------
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(14.dp))
-            // --- UBAH BACKGROUND: Biar nyala pas di-highlight ---
-            .background(if (pressed || isHighlighted) colors.pressed else Color.Transparent)
-            // --------------------------------------------------
+            // Cuma pakai 'pressed' buat efek klik biasa. Kaca melayangnya udah diurus di file SongActionsMenu.
+            .background(if (pressed) colors.pressed else Color.Transparent) 
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -401,6 +419,8 @@ fun IosMenuRow(
             .padding(start = 12.dp, end = 14.dp, top = 11.dp, bottom = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+
+
         // ... (Sisa isi Row: Box icon, Column text, dll biarin aja jangan dihapus) ...
         Box(Modifier.width(28.dp), contentAlignment = Alignment.Center) {
             if (icon != null) {
