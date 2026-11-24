@@ -536,21 +536,6 @@ if (dragState.highlightedBounds != null) {
 }
 
                 
-                    // INNER GLOW (Cahaya di dalam kaca - Harus di dalam Box!)
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .align(Alignment.TopCenter)
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color.Transparent, Color.White.copy(alpha = 0.8f), Color.Transparent)
-                                )
-                            )
-                    )
-                }
-            }
-            // ------------------------------------
 
             // Kolom Menu Asli
             Column(
