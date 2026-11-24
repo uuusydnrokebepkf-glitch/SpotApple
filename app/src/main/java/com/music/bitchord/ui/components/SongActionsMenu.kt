@@ -92,6 +92,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import dev.chrisbanes.haze.hazeSource
 /**
  * Long-press menu for a track, in the shape music apps normally use.
  *
@@ -434,56 +435,54 @@ fun SongActionsMenu(
         }
     }
 
-// 1. Bikin state & scope
-val dragState = remember { IosMenuDragState() }
-var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-val density = androidx.compose.ui.platform.LocalDensity.current
+    // 1. Bikin state & scope
+    val dragState = remember { IosMenuDragState() }
+    var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    
+    // State lokal buat efek Blur (Haze)
+    val glassHaze = remember { dev.chrisbanes.haze.HazeState() }
 
-val targetY = dragState.highlightedBounds?.top ?: 0f
-val targetHeight = dragState.highlightedBounds?.height ?: 0f
+    val targetY = dragState.highlightedBounds?.top ?: 0f
+    val targetHeight = dragState.highlightedBounds?.height ?: 0f
+    
+    val animatedY by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = targetY,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.4f, // Mantul
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow // Fluid
+        ),
+        label = "glassY"
+    )
+    val animatedHeight by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = targetHeight,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.4f, 
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+        ),
+        label = "glassHeight"
+    )
+    val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.4f, 
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "glassScale"
+    )
 
-// 👇 INI KODE YANG KAMU KIRIM TADI 👇
-val animatedY by androidx.compose.animation.core.animateFloatAsState(
-    targetValue = targetY,
-    animationSpec = androidx.compose.animation.core.spring(
-        dampingRatio = 0.4f, // Bikin mantul overshoot
-        stiffness = androidx.compose.animation.core.Spring.StiffnessLow // Lebih lambat & fluid
-    ),
-    label = "glassY"
-)
-val animatedHeight by androidx.compose.animation.core.animateFloatAsState(
-    targetValue = targetHeight,
-    animationSpec = androidx.compose.animation.core.spring(
-        dampingRatio = 0.4f, 
-        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-    ),
-    label = "glassHeight"
-)
-val animatedScale by androidx.compose.animation.core.animateFloatAsState(
-    targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
-    animationSpec = androidx.compose.animation.core.spring(
-        dampingRatio = 0.4f, 
-        stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
-    ),
-    label = "glassScale"
-)
-// 👆 SAMPAI SINI 👆
-
-// Di bawahnya baru CompositionLocalProvider
-CompositionLocalProvider(
-    LocalActionRowStyle provides ActionRowStyle.Menu,
-    LocalIosMenuDragState provides dragState
-) {
-    // ... Box kaca Jelly yang tadi ...
-        // BUNGKUS PAKAI BOX BIAR KACA BISA MELAYANG
+    CompositionLocalProvider(
+        LocalActionRowStyle provides ActionRowStyle.Menu,
+        LocalIosMenuDragState provides dragState
+    ) {
         Box(modifier = modifier.fillMaxWidth()) {
             
-            // --- KACA MELAYANG (LIQUID GLASS APPLE + JELLY EFFECT) ---
+            // --- KACA MELAYANG (LIQUID GLASS APPLE + BLUR + JELLY) ---
             if (dragState.highlightedBounds != null) {
                 val localY = animatedY - columnOffset.y
                 val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                 
-                // 1. RUMUS EFEK JELLY (Memanjang saat digeser)
+                // Rumus Jelly (Memanjang)
                 val deltaY = targetY - animatedY
                 val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
                 val jellyScaleY = 1f + stretch 
@@ -496,68 +495,73 @@ CompositionLocalProvider(
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                         .height(with(density) { animatedHeight.toDp() })
-                        // 2. EFEK LIQUID: Gabungan Zoom + Jelly Stretch
+                        // EFEK ZOOM + JELLY
                         .graphicsLayer {
                             scaleX = animatedScale * jellyScaleX
                             scaleY = animatedScale * jellyScaleY
                         }
-                        // 3. BAYANGAN MELAYANG (Lebih dalam)
                         .shadow(
-                            elevation = 12.dp, 
+                            elevation = 16.dp, 
                             shape = RoundedCornerShape(14.dp), 
                             clip = false,
                             ambientColor = Color.Black.copy(alpha = 0.3f),
                             spotColor = Color.Black.copy(alpha = 0.4f)
                         )
                         .clip(RoundedCornerShape(14.dp))
-                        // 4. EFEK KACA (Gradient transparan)
-                        .background(
-                            brush = if (isDark) {
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.22f),
-                                        Color.White.copy(alpha = 0.05f)
-                                    )
-                                )
-                            } else {
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.90f),
-                                        Color.White.copy(alpha = 0.30f)
-                                    )
-                                )
-                            }
+                        // 👇 EFEK BLUR ASLI (HAZE) 👇
+                        .optimizedHazeEffect(
+                            state = glassHaze,
+                            style = dev.chrisbanes.haze.HazeStyle(
+                                backgroundColor = if (isDark) Color.White.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.2f),
+                                tints = emptyList(),
+                                blurRadius = 24.dp, // Kekuatan blur
+                                noiseFactor = 0.05f
+                            )
                         )
-                        // 5. EFEK PANTULAN CAHAYA KACA (Specular Highlight)
+                        // EFEK PANTULAN CAHAYA (BORDER KACA)
                         .border(
-                            width = 1.2.dp,
+                            width = 1.5.dp,
                             brush = if (isDark) {
                                 Brush.linearGradient(
                                     listOf(
-                                        Color.White.copy(alpha = 0.8f),
-                                        Color.Transparent,
-                                        Color.White.copy(alpha = 0.15f)
+                                        Color.White.copy(alpha = 0.9f),
+                                        Color.White.copy(alpha = 0.1f),
+                                        Color.Transparent
                                     )
                                 )
                             } else {
                                 Brush.linearGradient(
                                     listOf(
                                         Color.White.copy(alpha = 1f),
-                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.2f),
                                         Color.Black.copy(alpha = 0.1f)
                                     )
                                 )
                             },
                             shape = RoundedCornerShape(14.dp)
                         )
-                )
+                ) {
+                    // INNER GLOW (Cahaya di dalam kaca)
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .align(Alignment.TopCenter)
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(Color.Transparent, Color.White.copy(alpha = 0.8f), Color.Transparent)
+                                )
+                            )
+                    )
+                }
             }
             // ------------------------------------
 
-            // Kolom Menu Asli
+            // Kolom Menu Asli (Ini jadi sumber blur-nya)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .hazeSource(glassHaze) // <--- WAJIB: Biar kacanya bisa nge-blur menu ini
                     .onGloballyPositioned { columnOffset = it.positionInRoot() }
                     .verticalScroll(rememberScrollState())
                     .pointerInput(Unit) {
@@ -567,7 +571,6 @@ CompositionLocalProvider(
                             val touchSlop = viewConfiguration.touchSlop
                             var dragStartY = down.position.y
 
-                            // Jari nyentuh, kaca muncul
                             dragState.update(down.position.y + columnOffset.y)
 
                             do {
@@ -582,16 +585,15 @@ CompositionLocalProvider(
                                     }
                                     if (isDragging) {
                                         change.consume()
-                                        // Geser kaca
                                         dragState.update(change.position.y + columnOffset.y)
                                     }
                                 }
 
                                 if (!change.pressed) {
                                     if (isDragging) {
-                                        dragState.release() // Lepas = eksekusi
+                                        dragState.release() 
                                     } else {
-                                        dragState.reset() // Ngetuk = batalin kaca
+                                        dragState.reset() 
                                     }
                                     break
                                 }
@@ -607,7 +609,10 @@ CompositionLocalProvider(
             }
         }
     }
-}
+} 
+
+
+
 
             
 
