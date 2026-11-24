@@ -84,6 +84,7 @@ import com.music.bitchord.ui.components.backdrop.backdrops.SnapshotBackdrop
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.animation.core.animateFloatAsState
 import kotlin.math.roundToInt
 
 /**
