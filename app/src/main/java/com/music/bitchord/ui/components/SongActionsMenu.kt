@@ -440,8 +440,7 @@ fun SongActionsMenu(
     var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     val density = androidx.compose.ui.platform.LocalDensity.current
     
-    // State lokal buat efek Blur (Haze)
-    val glassHaze = remember { dev.chrisbanes.haze.HazeState() }
+    
 
     val targetY = dragState.highlightedBounds?.top ?: 0f
     val targetHeight = dragState.highlightedBounds?.height ?: 0f
@@ -571,7 +570,6 @@ if (dragState.highlightedBounds != null) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .hazeSource(glassHaze) // <--- WAJIB: Biar kacanya bisa nge-blur menu ini
                     .onGloballyPositioned { columnOffset = it.positionInRoot() }
                     .verticalScroll(rememberScrollState())
                     .pointerInput(Unit) {
