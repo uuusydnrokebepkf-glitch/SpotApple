@@ -381,21 +381,41 @@ fun IosMenuRow(
     val alpha = if (enabled) 1f else 0.4f
     val foreground = labelColor ?: colors.label
 
-    // --- TAMBAHAN ID UNIK ---
+    // --- TAMBAHAN ID UNIK & STATE ---
     val dragState = LocalIosMenuDragState.current
     val rowId = remember { java.util.UUID.randomUUID().toString() }
+    var myBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    val isHighlighted = dragState?.highlightedBounds != null && myBounds == dragState.highlightedBounds
+    
+    // ANIMASI ZOOM (Khas iOS)
+    val rowScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isHighlighted) 1.05f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.35f, // Efek mantul
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        ),
+        label = "rowScale"
+    )
     
     // Hapus baris dari sistem kalau menunya ditutup
     androidx.compose.runtime.DisposableEffect(rowId) {
         onDispose { dragState?.unregisterRow(rowId) }
     }
+    // --------------------------------
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // EFEK ZOOM DI SINI
+            .graphicsLayer { 
+                scaleX = rowScale
+                scaleY = rowScale 
+            }
             .onGloballyPositioned { coords ->
+                val bounds = coords.boundsInRoot()
+                myBounds = bounds // Simpan bounds buat ngecek highlight
                 if (onClick != null && enabled) {
-                    dragState?.registerRow(rowId, coords.boundsInRoot(), onClick)
+                    dragState?.registerRow(rowId, bounds, onClick)
                 }
             }
             .padding(horizontal = 8.dp)
