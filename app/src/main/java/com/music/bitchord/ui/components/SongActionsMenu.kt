@@ -476,67 +476,80 @@ fun SongActionsMenu(
         // BUNGKUS PAKAI BOX BIAR KACA BISA MELAYANG
         Box(modifier = modifier.fillMaxWidth()) {
             
-            // --- KACA MELAYANG (LIQUID GLASS APPLE) ---
-            if (dragState.highlightedBounds != null) {
-                val localY = animatedY - columnOffset.y
-                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-                
-                Box(
-                    modifier = Modifier
-                        .zIndex(1f) 
-                        .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .height(with(density) { animatedHeight.toDp() })
-                        // EFEK MEMBENGKAK ANIMASI (Pake animatedScale)
-                        .graphicsLayer {
-                            scaleX = animatedScale 
-                            scaleY = animatedScale
-                        }
-                        .shadow(4.dp, RoundedCornerShape(14.dp), clip = false) // Efek bayangan melayang
-                        .clip(RoundedCornerShape(14.dp))
-                        // EFEK KACA (Gradient)
-                        .background(
-                            brush = if (isDark) {
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.25f),
-                                        Color.White.copy(alpha = 0.08f)
-                                    )
-                                )
-                            } else {
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.90f),
-                                        Color.White.copy(alpha = 0.40f)
-                                    )
-                                )
-                            }
-                        )
-                        // EFEK PANTULAN CAHAYA
-                        .border(
-                            width = 1.dp,
-                            brush = if (isDark) {
-                                Brush.linearGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.6f),
-                                        Color.Transparent,
-                                        Color.White.copy(alpha = 0.1f)
-                                    )
-                                )
-                            } else {
-                                Brush.linearGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.9f),
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.1f)
-                                    )
-                                )
-                            },
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                )
+// --- KACA MELAYANG (LIQUID GLASS APPLE + JELLY EFFECT) ---
+if (dragState.highlightedBounds != null) {
+    val localY = animatedY - columnOffset.y
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    
+    // 1. RUMUS EFEK JELLY (Memanjang saat digeser)
+    val deltaY = targetY - animatedY
+    val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
+    val jellyScaleY = 1f + stretch 
+    val jellyScaleX = 1f - (stretch * 0.5f) 
+
+    Box(
+        modifier = Modifier
+            .zIndex(1f) 
+            .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .height(with(density) { animatedHeight.toDp() })
+            // 2. EFEK LIQUID: Gabungan Zoom + Jelly Stretch
+            .graphicsLayer {
+                scaleX = animatedScale * jellyScaleX
+                scaleY = animatedScale * jellyScaleY
             }
+            // 3. BAYANGAN MELAYANG (Lebih dalam)
+            .shadow(
+                elevation = 12.dp, 
+                shape = RoundedCornerShape(14.dp), 
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.3f),
+                spotColor = Color.Black.copy(alpha = 0.4f)
+            )
+            .clip(RoundedCornerShape(14.dp))
+            // 4. EFEK KACA (Gradient transparan)
+            .background(
+                brush = if (isDark) {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.22f),
+                            Color.White.copy(alpha = 0.05f)
+                        )
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.90f),
+                            Color.White.copy(alpha = 0.30f)
+                        )
+                    )
+                }
+            )
+            // 5. EFEK PANTULAN CAHAYA KACA (Specular Highlight)
+            .border(
+                width = 1.2.dp,
+                brush = if (isDark) {
+                    Brush.linearGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.8f),
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.15f)
+                        )
+                    )
+                } else {
+                    Brush.linearGradient(
+                        listOf(
+                            Color.White.copy(alpha = 1f),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.1f)
+                        )
+                    )
+                },
+                shape = RoundedCornerShape(14.dp)
+            )
+    )
+}
             // ------------------------------------
 
             // Kolom Menu Asli
