@@ -477,14 +477,14 @@ fun SongActionsMenu(
     ) {
         Box(modifier = modifier.fillMaxWidth()) {
             
-// --- KACA MELAYANG (LIQUID GLASS APPLE) ---
+// --- KACA MELAYANG (SOFT GLASS / LIQUID) ---
 if (dragState.highlightedBounds != null) {
     val localY = animatedY - columnOffset.y
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     
     // Rumus Jelly (Memanjang saat digeser)
     val deltaY = targetY - animatedY
-    val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
+    val stretch = (kotlin.math.abs(deltaY) / 120f).coerceIn(0f, 0.25f)
     val jellyScaleY = 1f + stretch 
     val jellyScaleX = 1f - (stretch * 0.5f) 
 
@@ -500,40 +500,82 @@ if (dragState.highlightedBounds != null) {
                 scaleX = animatedScale * jellyScaleX
                 scaleY = animatedScale * jellyScaleY
             }
+            // BAYANGAN AGAK LEMBUT
             .shadow(
-                elevation = 10.dp, 
+                elevation = 12.dp, 
                 shape = RoundedCornerShape(14.dp), 
                 clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.2f),
-                spotColor = Color.Black.copy(alpha = 0.3f)
+                ambientColor = Color.Black.copy(alpha = 0.3f),
+                spotColor = Color.Black.copy(alpha = 0.4f)
             )
             .clip(RoundedCornerShape(14.dp))
-            // 👇 EFEK BLUR ASLI (KACANYA BENING BANGET) 👇
-            .optimizedHazeEffect(
-                state = glassHaze,
-                style = dev.chrisbanes.haze.HazeStyle(
-                    backgroundColor = Color.Transparent, // BENERAN TRANSPARAN
-                    tints = emptyList(), // Jangan ada warna abu-abu
-                    blurRadius = 20.dp, // Blur yang nendang
-                    noiseFactor = 0f
-                )
-            )
-            // PANTULAN CAHAYA (BORDER KACA TIPIS)
-            .border(
-                width = 0.8.dp, // Dibikin tipis biar elegan
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.6f), // Kilau atas
-                        Color.Transparent,              // Tengah
-                        Color.White.copy(alpha = 0.1f)  // Bawah
+            // 1. WARNA DASAR KACA (BENING TAPI ADA WARNA)
+            .background(
+                brush = if (isDark) {
+                    // Mode Gelap: Hitam kebiruan/putih super tipis
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF2A2A2E).copy(alpha = 0.6f),
+                            Color(0xFF1C1C1E).copy(alpha = 0.4f)
+                        )
                     )
+                } else {
+                    // Mode Terang: Putih susu yang bening
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.7f),
+                            Color.White.copy(alpha = 0.3f)
+                        )
+                    )
+                }
+            )
+            // 2. BORDER KACA (EFEK LICIN & KILAU)
+            .border(
+                width = 1.2.dp, 
+                brush = Brush.linearGradient(
+                    0f to Color.White.copy(alpha = 0.8f), // Kiri atas nyala
+                    0.4f to Color.Transparent,             // Tengah bening
+                    1f to Color.White.copy(alpha = 0.2f)   // Kanan bawah nyala tipis
                 ),
                 shape = RoundedCornerShape(14.dp)
             )
     ) {
-        // Inner glow dihapus biar makin bersih & bening
+        // 3. HIGHLIGHT ATAS (Bikin kelihatan kayak kaca tebal / Agar-agar)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(40.dp) // Tinggi area highlight
+                .align(Alignment.TopCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = if (isDark) 0.15f else 0.5f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+        
+        // 4. GARIS CAHAYA TIPIS DI TEPI ATAS (Inner Reflection)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(1.dp)
+                .align(Alignment.TopCenter)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.Transparent, 
+                            Color.White.copy(alpha = 0.9f), 
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
     }
 }
+// ------------------------------------
 
                 
 
