@@ -459,7 +459,7 @@ fun SongActionsMenu(
         ),
         label = "glassHeight"
     )
-    // Animasi Pop (Membesar saat pindah menu)
+
     val animatedScale by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
         animationSpec = androidx.compose.animation.core.spring(
@@ -468,7 +468,7 @@ fun SongActionsMenu(
         ),
         label = "glassScale"
     )
-    
+
     CompositionLocalProvider(
         LocalActionRowStyle provides ActionRowStyle.Menu,
         LocalIosMenuDragState provides dragState
@@ -482,30 +482,30 @@ fun SongActionsMenu(
                 val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                 
                 Box(
-                   modifier = Modifier
+                    modifier = Modifier
                         .zIndex(1f) 
                         .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                         .height(with(density) { animatedHeight.toDp() })
-                         // EFEK MEMBENGKAK ANIMASI (Pake animatedScale)
+                        // EFEK MEMBENGKAK ANIMASI (Pake animatedScale)
                         .graphicsLayer {
                             scaleX = animatedScale 
                             scaleY = animatedScale
                         }
                         .shadow(4.dp, RoundedCornerShape(14.dp), clip = false) // Efek bayangan melayang
                         .clip(RoundedCornerShape(14.dp))
-                         // EFEK KACA (Gradient)
+                        // EFEK KACA (Gradient)
                         .background(
                             brush = if (isDark) {
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                Brush.verticalGradient(
                                     colors = listOf(
                                         Color.White.copy(alpha = 0.25f),
                                         Color.White.copy(alpha = 0.08f)
                                     )
                                 )
                             } else {
-                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                Brush.verticalGradient(
                                     colors = listOf(
                                         Color.White.copy(alpha = 0.90f),
                                         Color.White.copy(alpha = 0.40f)
@@ -513,11 +513,11 @@ fun SongActionsMenu(
                                 )
                             }
                         )
-                          // EFEK PANTULAN CAHAYA
+                        // EFEK PANTULAN CAHAYA
                         .border(
                             width = 1.dp,
                             brush = if (isDark) {
-                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                Brush.linearGradient(
                                     listOf(
                                         Color.White.copy(alpha = 0.6f),
                                         Color.Transparent,
@@ -525,7 +525,7 @@ fun SongActionsMenu(
                                     )
                                 )
                             } else {
-                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                Brush.linearGradient(
                                     listOf(
                                         Color.White.copy(alpha = 0.9f),
                                         Color.Transparent,
@@ -536,6 +536,7 @@ fun SongActionsMenu(
                             shape = RoundedCornerShape(14.dp)
                         )
                 )
+            }
             // ------------------------------------
 
             // Kolom Menu Asli
@@ -592,6 +593,8 @@ fun SongActionsMenu(
         }
     }
 }
+
+            
 
 
 
