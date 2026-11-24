@@ -477,70 +477,80 @@ fun SongActionsMenu(
     ) {
         Box(modifier = modifier.fillMaxWidth()) {
             
-            // --- KACA MELAYANG (LIQUID GLASS APPLE + BLUR + JELLY) ---
-            if (dragState.highlightedBounds != null) {
-                val localY = animatedY - columnOffset.y
-                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-                
-                // Rumus Jelly (Memanjang)
-                val deltaY = targetY - animatedY
-                val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
-                val jellyScaleY = 1f + stretch 
-                val jellyScaleX = 1f - (stretch * 0.5f) 
+// --- KACA MELAYANG (LIQUID GLASS APPLE) ---
+if (dragState.highlightedBounds != null) {
+    val localY = animatedY - columnOffset.y
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    
+    // Rumus Jelly (Memanjang saat digeser)
+    val deltaY = targetY - animatedY
+    val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
+    val jellyScaleY = 1f + stretch 
+    val jellyScaleX = 1f - (stretch * 0.5f) 
 
-                Box(
-                    modifier = Modifier
-                        .zIndex(1f) 
-                        .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .height(with(density) { animatedHeight.toDp() })
-                        // EFEK ZOOM + JELLY
-                        .graphicsLayer {
-                            scaleX = animatedScale * jellyScaleX
-                            scaleY = animatedScale * jellyScaleY
-                        }
-                        .shadow(
-                            elevation = 16.dp, 
-                            shape = RoundedCornerShape(14.dp), 
-                            clip = false,
-                            ambientColor = Color.Black.copy(alpha = 0.3f),
-                            spotColor = Color.Black.copy(alpha = 0.4f)
+    Box(
+        modifier = Modifier
+            .zIndex(1f) 
+            .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .height(with(density) { animatedHeight.toDp() })
+            // EFEK LIQUID: Zoom + Jelly
+            .graphicsLayer {
+                scaleX = animatedScale * jellyScaleX
+                scaleY = animatedScale * jellyScaleY
+            }
+            // BAYANGAN KACA (Biar kelihatan ngambang)
+            .shadow(
+                elevation = 20.dp, 
+                shape = RoundedCornerShape(14.dp), 
+                clip = false,
+                ambientColor = Color.White.copy(alpha = 0.1f), // Cahaya dari bawah
+                spotColor = Color.Black.copy(alpha = 0.5f)
+            )
+            .clip(RoundedCornerShape(14.dp))
+            // ISI KACA (Sangat transparan)
+            .background(
+                brush = if (isDark) {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF3A3A3C).copy(alpha = 0.5f), // Abu-abu gelap transparan
+                            Color(0xFF1C1C1E).copy(alpha = 0.7f)  // Lebih gelap di bawah
                         )
-                        .clip(RoundedCornerShape(14.dp))
-                        // 👇 EFEK BLUR ASLI (HAZE) 👇
-                        .optimizedHazeEffect(
-                            state = glassHaze,
-                            style = dev.chrisbanes.haze.HazeStyle(
-                                backgroundColor = if (isDark) Color.White.copy(alpha = 0.05f) else Color.White.copy(alpha = 0.2f),
-                                tints = emptyList(),
-                                blurRadius = 24.dp, // Kekuatan blur
-                                noiseFactor = 0.05f
-                            )
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.85f),
+                            Color.White.copy(alpha = 0.45f)
                         )
-                        // EFEK PANTULAN CAHAYA (BORDER KACA)
-                        .border(
-                            width = 1.5.dp,
-                            brush = if (isDark) {
-                                Brush.linearGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.9f),
-                                        Color.White.copy(alpha = 0.1f),
-                                        Color.Transparent
-                                    )
-                                )
-                            } else {
-                                Brush.linearGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 1f),
-                                        Color.White.copy(alpha = 0.2f),
-                                        Color.Black.copy(alpha = 0.1f)
-                                    )
-                                )
-                            },
-                            shape = RoundedCornerShape(14.dp)
+                    )
+                }
+            )
+            // PANTULAN CAHAYA (BORDER KACA)
+            .border(
+                width = 1.5.dp,
+                brush = if (isDark) {
+                    Brush.linearGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.85f), // Kilau atas
+                            Color.Transparent,               // Tengah
+                            Color.White.copy(alpha = 0.2f)   // Bawah
                         )
-                ) {
+                    )
+                } else {
+                    Brush.linearGradient(
+                        listOf(
+                            Color.White.copy(alpha = 1f),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.15f)
+                        )
+                    )
+                },
+                shape = RoundedCornerShape(14.dp)
+            )
+    )
+}
                     // INNER GLOW (Cahaya di dalam kaca)
                     Box(
                         Modifier
