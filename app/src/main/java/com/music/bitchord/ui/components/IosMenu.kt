@@ -390,7 +390,7 @@ fun IosMenuRow(
     
     // ANIMASI ZOOM (Khas iOS)
     val rowScale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (isHighlighted) 1.05f else 1f,
+        targetValue = if (isHighlighted) 1.12f else 1f,
         animationSpec = androidx.compose.animation.core.spring(
             dampingRatio = 0.35f, // Efek mantul
             stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
