@@ -481,31 +481,60 @@ fun SongActionsMenu(
                 val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
                 
                 Box(
-                    modifier = Modifier
+                   modifier = Modifier
                         .zIndex(1f) 
                         .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                         .height(with(density) { animatedHeight.toDp() })
-                        // EFEK MEMBENGKAK SEDIKIT (Khas iOS)
+                         // EFEK MEMBENGKAK ANIMASI (Pake animatedScale)
                         .graphicsLayer {
-                            scaleX = 1.02f
-                            scaleY = 1.02f
+                            scaleX = animatedScale 
+                            scaleY = animatedScale
                         }
+                        .shadow(4.dp, RoundedCornerShape(14.dp), clip = false) // Efek bayangan melayang
                         .clip(RoundedCornerShape(14.dp))
-                        // EFEK KACA (Liquid Glass)
+                         // EFEK KACA (Gradient)
                         .background(
-                            if (isDark) Color.White.copy(alpha = 0.15f) 
-                            else Color.Black.copy(alpha = 0.06f)
+                            brush = if (isDark) {
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.25f),
+                                        Color.White.copy(alpha = 0.08f)
+                                    )
+                                )
+                            } else {
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.90f),
+                                        Color.White.copy(alpha = 0.40f)
+                                    )
+                                )
+                            }
                         )
+                          // EFEK PANTULAN CAHAYA
                         .border(
-                            0.5.dp, 
-                            if (isDark) Color.White.copy(alpha = 0.25f) 
-                            else Color.Black.copy(alpha = 0.1f), 
-                            RoundedCornerShape(14.dp)
+                            width = 1.dp,
+                            brush = if (isDark) {
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.1f)
+                                    )
+                                )
+                            } else {
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.9f),
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.1f)
+                                    )
+                                )
+                            },
+                            shape = RoundedCornerShape(14.dp)
                         )
                 )
-            }
             // ------------------------------------
 
             // Kolom Menu Asli
