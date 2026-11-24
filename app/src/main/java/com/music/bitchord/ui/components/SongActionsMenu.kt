@@ -434,122 +434,124 @@ fun SongActionsMenu(
         }
     }
 
-    // 1. Bikin state & scope
-    val dragState = remember { IosMenuDragState() }
-    var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-    val density = androidx.compose.ui.platform.LocalDensity.current
+// 1. Bikin state & scope
+val dragState = remember { IosMenuDragState() }
+var columnOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+val density = androidx.compose.ui.platform.LocalDensity.current
 
-    // --- KUNCI EFEK MULUS: Pakai animateFloatAsState biar Compose yang ngurus ---
-    val targetY = dragState.highlightedBounds?.top ?: 0f
-    val targetHeight = dragState.highlightedBounds?.height ?: 0f
-    
-    val animatedY by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = targetY,
-        animationSpec = androidx.compose.animation.core.spring(
-            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-        ),
-        label = "glassY"
-    )
-    val animatedHeight by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = targetHeight,
-        animationSpec = androidx.compose.animation.core.spring(
-            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-        ),
-        label = "glassHeight"
-    )
+val targetY = dragState.highlightedBounds?.top ?: 0f
+val targetHeight = dragState.highlightedBounds?.height ?: 0f
 
-    val animatedScale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
-        animationSpec = androidx.compose.animation.core.spring(
-            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
-        ),
-        label = "glassScale"
-    )
+// 👇 INI KODE YANG KAMU KIRIM TADI 👇
+val animatedY by androidx.compose.animation.core.animateFloatAsState(
+    targetValue = targetY,
+    animationSpec = androidx.compose.animation.core.spring(
+        dampingRatio = 0.4f, // Bikin mantul overshoot
+        stiffness = androidx.compose.animation.core.Spring.StiffnessLow // Lebih lambat & fluid
+    ),
+    label = "glassY"
+)
+val animatedHeight by androidx.compose.animation.core.animateFloatAsState(
+    targetValue = targetHeight,
+    animationSpec = androidx.compose.animation.core.spring(
+        dampingRatio = 0.4f, 
+        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+    ),
+    label = "glassHeight"
+)
+val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+    targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
+    animationSpec = androidx.compose.animation.core.spring(
+        dampingRatio = 0.4f, 
+        stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+    ),
+    label = "glassScale"
+)
+// 👆 SAMPAI SINI 👆
 
-    CompositionLocalProvider(
-        LocalActionRowStyle provides ActionRowStyle.Menu,
-        LocalIosMenuDragState provides dragState
-    ) {
+// Di bawahnya baru CompositionLocalProvider
+CompositionLocalProvider(
+    LocalActionRowStyle provides ActionRowStyle.Menu,
+    LocalIosMenuDragState provides dragState
+) {
+    // ... Box kaca Jelly yang tadi ...
         // BUNGKUS PAKAI BOX BIAR KACA BISA MELAYANG
         Box(modifier = modifier.fillMaxWidth()) {
             
-// --- KACA MELAYANG (LIQUID GLASS APPLE + JELLY EFFECT) ---
-if (dragState.highlightedBounds != null) {
-    val localY = animatedY - columnOffset.y
-    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    
-    // 1. RUMUS EFEK JELLY (Memanjang saat digeser)
-    val deltaY = targetY - animatedY
-    val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
-    val jellyScaleY = 1f + stretch 
-    val jellyScaleX = 1f - (stretch * 0.5f) 
+            // --- KACA MELAYANG (LIQUID GLASS APPLE + JELLY EFFECT) ---
+            if (dragState.highlightedBounds != null) {
+                val localY = animatedY - columnOffset.y
+                val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+                
+                // 1. RUMUS EFEK JELLY (Memanjang saat digeser)
+                val deltaY = targetY - animatedY
+                val stretch = (kotlin.math.abs(deltaY) / 150f).coerceIn(0f, 0.2f)
+                val jellyScaleY = 1f + stretch 
+                val jellyScaleX = 1f - (stretch * 0.5f) 
 
-    Box(
-        modifier = Modifier
-            .zIndex(1f) 
-            .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-            .height(with(density) { animatedHeight.toDp() })
-            // 2. EFEK LIQUID: Gabungan Zoom + Jelly Stretch
-            .graphicsLayer {
-                scaleX = animatedScale * jellyScaleX
-                scaleY = animatedScale * jellyScaleY
+                Box(
+                    modifier = Modifier
+                        .zIndex(1f) 
+                        .offset { androidx.compose.ui.unit.IntOffset(0, localY.roundToInt()) }
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .height(with(density) { animatedHeight.toDp() })
+                        // 2. EFEK LIQUID: Gabungan Zoom + Jelly Stretch
+                        .graphicsLayer {
+                            scaleX = animatedScale * jellyScaleX
+                            scaleY = animatedScale * jellyScaleY
+                        }
+                        // 3. BAYANGAN MELAYANG (Lebih dalam)
+                        .shadow(
+                            elevation = 12.dp, 
+                            shape = RoundedCornerShape(14.dp), 
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.3f),
+                            spotColor = Color.Black.copy(alpha = 0.4f)
+                        )
+                        .clip(RoundedCornerShape(14.dp))
+                        // 4. EFEK KACA (Gradient transparan)
+                        .background(
+                            brush = if (isDark) {
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.22f),
+                                        Color.White.copy(alpha = 0.05f)
+                                    )
+                                )
+                            } else {
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.90f),
+                                        Color.White.copy(alpha = 0.30f)
+                                    )
+                                )
+                            }
+                        )
+                        // 5. EFEK PANTULAN CAHAYA KACA (Specular Highlight)
+                        .border(
+                            width = 1.2.dp,
+                            brush = if (isDark) {
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.8f),
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.15f)
+                                    )
+                                )
+                            } else {
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 1f),
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.1f)
+                                    )
+                                )
+                            },
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                )
             }
-            // 3. BAYANGAN MELAYANG (Lebih dalam)
-            .shadow(
-                elevation = 12.dp, 
-                shape = RoundedCornerShape(14.dp), 
-                clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.4f)
-            )
-            .clip(RoundedCornerShape(14.dp))
-            // 4. EFEK KACA (Gradient transparan)
-            .background(
-                brush = if (isDark) {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.22f),
-                            Color.White.copy(alpha = 0.05f)
-                        )
-                    )
-                } else {
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.90f),
-                            Color.White.copy(alpha = 0.30f)
-                        )
-                    )
-                }
-            )
-            // 5. EFEK PANTULAN CAHAYA KACA (Specular Highlight)
-            .border(
-                width = 1.2.dp,
-                brush = if (isDark) {
-                    Brush.linearGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.8f),
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.15f)
-                        )
-                    )
-                } else {
-                    Brush.linearGradient(
-                        listOf(
-                            Color.White.copy(alpha = 1f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.1f)
-                        )
-                    )
-                },
-                shape = RoundedCornerShape(14.dp)
-            )
-    )
-}
             // ------------------------------------
 
             // Kolom Menu Asli
@@ -565,7 +567,7 @@ if (dragState.highlightedBounds != null) {
                             val touchSlop = viewConfiguration.touchSlop
                             var dragStartY = down.position.y
 
-                            // Langsung munculin kaca (TANPA SCOPE LAGI YA!)
+                            // Jari nyentuh, kaca muncul
                             dragState.update(down.position.y + columnOffset.y)
 
                             do {
@@ -580,7 +582,7 @@ if (dragState.highlightedBounds != null) {
                                     }
                                     if (isDragging) {
                                         change.consume()
-                                        // Geser kaca (TANPA SCOPE)
+                                        // Geser kaca
                                         dragState.update(change.position.y + columnOffset.y)
                                     }
                                 }
