@@ -458,7 +458,16 @@ fun SongActionsMenu(
         ),
         label = "glassHeight"
     )
-
+    // Animasi Pop (Membesar saat pindah menu)
+    val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (dragState.highlightedBounds != null) 1.05f else 1.0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy, 
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "glassScale"
+    )
+    
     CompositionLocalProvider(
         LocalActionRowStyle provides ActionRowStyle.Menu,
         LocalIosMenuDragState provides dragState
