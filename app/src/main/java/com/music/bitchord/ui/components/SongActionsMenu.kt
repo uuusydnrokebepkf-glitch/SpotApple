@@ -500,74 +500,47 @@ if (dragState.highlightedBounds != null) {
                 scaleX = animatedScale * jellyScaleX
                 scaleY = animatedScale * jellyScaleY
             }
-            // BAYANGAN AGAK LEMBUT
+            // BAYANGAN LEMBUT (Biar kelihatan ngambang)
             .shadow(
-                elevation = 12.dp, 
+                elevation = 8.dp, 
                 shape = RoundedCornerShape(14.dp), 
                 clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.4f)
+                ambientColor = Color.Black.copy(alpha = 0.2f),
+                spotColor = Color.Black.copy(alpha = 0.3f)
             )
             .clip(RoundedCornerShape(14.dp))
-            // 1. WARNA DASAR KACA (BENING TAPI ADA WARNA)
+            // 1. WARNA DASAR KACA (SANGAT BENING, CUMA WHITE 10%)
             .background(
-                brush = if (isDark) {
-                    // Mode Gelap: Hitam kebiruan/putih super tipis
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF2A2A2E).copy(alpha = 0.6f),
-                            Color(0xFF1C1C1E).copy(alpha = 0.4f)
-                        )
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.12f), // Atas agak terang
+                        Color.White.copy(alpha = 0.03f)  // Bawah hampir hilang
                     )
-                } else {
-                    // Mode Terang: Putih susu yang bening
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.7f),
-                            Color.White.copy(alpha = 0.3f)
-                        )
-                    )
-                }
+                )
             )
             // 2. BORDER KACA (EFEK LICIN & KILAU)
             .border(
                 width = 1.2.dp, 
-                brush = Brush.linearGradient(
-                    0f to Color.White.copy(alpha = 0.8f), // Kiri atas nyala
-                    0.4f to Color.Transparent,             // Tengah bening
-                    1f to Color.White.copy(alpha = 0.2f)   // Kanan bawah nyala tipis
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.9f), // Kilau atas SANGAT TERANG
+                        Color.White.copy(alpha = 0.1f), // Tengah tipis
+                        Color.White.copy(alpha = 0.2f)  // Bawah sedikit nyala
+                    )
                 ),
                 shape = RoundedCornerShape(14.dp)
             )
     ) {
-        // 3. HIGHLIGHT ATAS (Bikin kelihatan kayak kaca tebal / Agar-agar)
+        // 3. HIGHLIGHT ATAS (Efek Kaca Melengkung / Agar-agar)
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(40.dp) // Tinggi area highlight
+                .height(20.dp) 
                 .align(Alignment.TopCenter)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = if (isDark) 0.15f else 0.5f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-        
-        // 4. GARIS CAHAYA TIPIS DI TEPI ATAS (Inner Reflection)
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(1.dp)
-                .align(Alignment.TopCenter)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.Transparent, 
-                            Color.White.copy(alpha = 0.9f), 
+                            Color.White.copy(alpha = 0.25f), // Kilau tebal di atas
                             Color.Transparent
                         )
                     )
@@ -576,6 +549,7 @@ if (dragState.highlightedBounds != null) {
     }
 }
 // ------------------------------------
+
 
                 
 
