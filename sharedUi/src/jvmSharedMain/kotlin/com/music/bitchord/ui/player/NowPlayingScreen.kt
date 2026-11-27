@@ -913,7 +913,10 @@ fun NowPlayingScreen(
     val openListenTogetherMembers: () -> Unit = { showListenTogetherMembers = true }
 
     val syncedLyricsEnabled by PlayerSettings.syncedLyrics.collectAsStateWithLifecycle()
-    val lyricsOffsetMs by PlayerSettings.lyricsOffsetMs.collectAsStateWithLifecycle()
+    // Ambil Map offset dari AppSettings
+    val offsetsMap by PlayerSettings.lyricsOffsets.collectAsStateWithLifecycle()
+    // Ambil offset khusus untuk lagu yang sedang diputar saat ini
+    val lyricsOffsetMs = offsetsMap[song.videoId] ?: 0
     // A lambda, not a value: read by the lyric strip and panel in scopes of
     // their own, so a tick recomposes them and not the player around them.
     val lyricsPlayhead = rememberLyricPlayhead(position)
