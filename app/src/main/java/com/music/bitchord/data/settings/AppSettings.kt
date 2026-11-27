@@ -188,13 +188,6 @@ object AppSettings {
     /** Only for the Discord, WebDAV and SMB secrets — everything else on here is plain prefs. */
     private lateinit var authStore: AuthStore
 
-    // 2. Fungsi buat nyimpen offset lagu
-    fun setLyricsOffset(songId: String, offsetMs: Int, prefs: SharedPreferences) {
-        val clamped = offsetMs.coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
-        prefs.edit().putInt("lyrics_offset_$songId", clamped).apply()
-        lyricsOffsets.value = lyricsOffsets.value + (songId to clamped)
-    }
-
     /**
      * Quality ceilings, one per kind of connection — the point of the split is
      * that Wi-Fi can stay on Lossless while mobile data is capped. Both
