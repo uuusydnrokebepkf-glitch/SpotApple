@@ -224,7 +224,7 @@ internal fun LyricsOffsetSheet(
                             value = offsetToFraction(offsetMs),
                             onValueChange = { 
                                 // GANTI: Simpan ke lagu ini
-                                PlayerSettings.setLyricsOffset(song.videoId, fractionToOffset(it), prefs) 
+                                AppSettings.setLyricsOffset(song.videoId, fractionToOffset(it), prefs) 
                             },
                             idleHeight = 6.dp,
                             activeHeight = 10.dp,
@@ -237,7 +237,7 @@ internal fun LyricsOffsetSheet(
                         ) {
                             haptics.play(Haptic.Select)
                             // GANTI: Simpan ke lagu ini
-                            PlayerSettings.setLyricsOffset(song.videoId, offsetMs + StepMs, prefs)
+                            AppSettings.setLyricsOffset(song.videoId, offsetMs + StepMs, prefs)
                         }
                     }
                 }
@@ -252,7 +252,7 @@ internal fun LyricsOffsetSheet(
                         .clickable(enabled = offsetMs != 0) {
                             haptics.play(Haptic.Tap)
                             // GANTI: Reset cuma buat lagu ini
-                            PlayerSettings.setLyricsOffset(song.videoId, 0, prefs)
+                            AppSettings.setLyricsOffset(song.videoId, 0, prefs)
                         }
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
