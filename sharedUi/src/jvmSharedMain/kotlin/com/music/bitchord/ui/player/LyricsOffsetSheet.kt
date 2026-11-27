@@ -85,7 +85,7 @@ internal fun LyricsOffsetSheet(
     val context = LocalContext.current
     // GANTI "NAMA_PREFS_KAMU" dengan nama SharedPreferences di AppSettings.kt/PlayerSettings.kt kamu
     // (Biasanya namanya "settings" atau "player_settings")
-    val prefs = remember { context.getSharedPreferences("NAMA_PREFS_KAMU", Context.MODE_PRIVATE) }
+    val prefs = remember { context.getSharedPreferences("bitchord_settings", Context.MODE_PRIVATE) }
 
     // 2. Ambil Map offset, lalu ambil nilai khusus buat lagu ini
     val offsetsMap by PlayerSettings.lyricsOffsets.collectAsStateWithLifecycle()
