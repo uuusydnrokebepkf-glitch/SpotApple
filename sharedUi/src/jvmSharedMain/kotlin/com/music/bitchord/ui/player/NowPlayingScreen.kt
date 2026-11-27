@@ -1744,6 +1744,7 @@ fun NowPlayingScreen(
         }
         if (lyricsOffsetOpen) {
             LyricsOffsetSheet(
+                song = song,
                 hazeState = playerHaze,
                 onDismiss = onDismissLyricsOffset,
             )
