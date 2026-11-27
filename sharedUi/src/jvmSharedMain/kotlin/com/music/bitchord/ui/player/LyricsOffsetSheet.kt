@@ -218,7 +218,7 @@ internal fun LyricsOffsetSheet(
                         ) {
                             haptics.play(Haptic.Select)
                             // GANTI: Simpan ke lagu ini
-                            PlayerSettings.setLyricsOffset(song.videoId, offsetMs - StepMs, prefs)
+                            AppSettings.setLyricsOffset(song.videoId, offsetMs - StepMs, prefs)
                         }
                         ThinSlider(
                             value = offsetToFraction(offsetMs),
