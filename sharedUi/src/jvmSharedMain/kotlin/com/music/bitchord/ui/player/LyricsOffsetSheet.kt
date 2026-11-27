@@ -1,5 +1,6 @@
 package com.music.bitchord.ui.player
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.music.bitchord.data.model.Song
 import com.music.bitchord.sharedui.resources.*
 import com.music.bitchord.ui.utils.containSheetGestures
 import com.music.bitchord.ui.components.MENU_FROST_ALPHA
@@ -73,11 +76,21 @@ private const val DismissDragFraction = 0.25f
 /** A player drawer for shifting all synced lyrics against the playback clock. */
 @Composable
 internal fun LyricsOffsetSheet(
+    song: Song, // <--- TAMBAHAN: Parameter buat nerima lagu yang lagi main
     hazeState: HazeState,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val offsetMs by PlayerSettings.lyricsOffsetMs.collectAsStateWithLifecycle()
+    // 1. Siapin Context & Prefs buat nyimpen
+    val context = LocalContext.current
+    // GANTI "NAMA_PREFS_KAMU" dengan nama SharedPreferences di AppSettings.kt/PlayerSettings.kt kamu
+    // (Biasanya namanya "settings" atau "player_settings")
+    val prefs = remember { context.getSharedPreferences("NAMA_PREFS_KAMU", Context.MODE_PRIVATE) }
+
+    // 2. Ambil Map offset, lalu ambil nilai khusus buat lagu ini
+    val offsetsMap by PlayerSettings.lyricsOffsets.collectAsStateWithLifecycle()
+    val offsetMs = offsetsMap[song.videoId] ?: 0
+
     val haptics = rememberHaptics()
     var drag by remember { mutableFloatStateOf(0f) }
     var height by remember { mutableIntStateOf(0) }
@@ -120,8 +133,6 @@ internal fun LyricsOffsetSheet(
                     .onSizeChanged { height = it.height }
                     .offset { IntOffset(0, drawerOffset.roundToInt()) }
                     .clip(DrawerShape)
-                    // The ⋯ menu's frost, as every drawer over the player — see
-                    // [PlayerDrawer].
                     .then(
                         when {
                             reduceDynamicBlur -> Modifier.background(MenuFrostDark)
@@ -205,11 +216,15 @@ internal fun LyricsOffsetSheet(
                             enabled = offsetMs > MIN_LYRICS_OFFSET_MS,
                         ) {
                             haptics.play(Haptic.Select)
-                            PlayerSettings.setLyricsOffsetMs(offsetMs - StepMs)
+                            // GANTI: Simpan ke lagu ini
+                            PlayerSettings.setLyricsOffset(song.videoId, offsetMs - StepMs, prefs)
                         }
                         ThinSlider(
                             value = offsetToFraction(offsetMs),
-                            onValueChange = { PlayerSettings.setLyricsOffsetMs(fractionToOffset(it)) },
+                            onValueChange = { 
+                                // GANTI: Simpan ke lagu ini
+                                PlayerSettings.setLyricsOffset(song.videoId, fractionToOffset(it), prefs) 
+                            },
                             idleHeight = 6.dp,
                             activeHeight = 10.dp,
                             modifier = Modifier.weight(1f),
@@ -220,7 +235,8 @@ internal fun LyricsOffsetSheet(
                             enabled = offsetMs < MAX_LYRICS_OFFSET_MS,
                         ) {
                             haptics.play(Haptic.Select)
-                            PlayerSettings.setLyricsOffsetMs(offsetMs + StepMs)
+                            // GANTI: Simpan ke lagu ini
+                            PlayerSettings.setLyricsOffset(song.videoId, offsetMs + StepMs, prefs)
                         }
                     }
                 }
@@ -234,7 +250,8 @@ internal fun LyricsOffsetSheet(
                         .clip(CircleShape)
                         .clickable(enabled = offsetMs != 0) {
                             haptics.play(Haptic.Tap)
-                            PlayerSettings.setLyricsOffsetMs(0)
+                            // GANTI: Reset cuma buat lagu ini
+                            PlayerSettings.setLyricsOffset(song.videoId, 0, prefs)
                         }
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
