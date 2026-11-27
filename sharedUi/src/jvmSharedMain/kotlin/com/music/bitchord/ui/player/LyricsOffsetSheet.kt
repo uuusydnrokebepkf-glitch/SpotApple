@@ -88,8 +88,8 @@ internal fun LyricsOffsetSheet(
     // (Biasanya namanya "settings" atau "player_settings")
     val prefs = remember { context.getSharedPreferences("bitchord_settings", Context.MODE_PRIVATE) }
 
-    // 2. Ambil Map offset, lalu ambil nilai khusus buat lagu ini
-    val offsetsMap by PlayerSettings.lyricsOffsets.collectAsStateWithLifecycle()
+    // Baris 91 (Ambil offset)
+    val offsetsMap by AppSettings.lyricsOffsets.collectAsStateWithLifecycle()
     val offsetMs = offsetsMap[song.videoId] ?: 0
 
     val haptics = rememberHaptics()
