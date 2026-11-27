@@ -518,7 +518,7 @@ object AppSettings {
     val lyricsBlur = MutableStateFlow(true)
 
     /** Positive values delay synced lyrics; negative values bring them forward. */
-    val lyricsOffsetMs = MutableStateFlow(0)
+    val lyricsOffsets = MutableStateFlow<Map<String, Int>>(emptyMap())
 
     /**
      * Which language the lyrics translate button translates *into*.
@@ -1047,8 +1047,16 @@ object AppSettings {
         glassPerformance.value = prefs.getBoolean(KEY_GLASS_PERFORMANCE, false)
         progressiveBlur.value = prefs.getBoolean(KEY_PROGRESSIVE_BLUR, false)
         lyricsBlur.value = prefs.getBoolean(KEY_LYRICS_BLUR, true)
-        lyricsOffsetMs.value = prefs.getInt(KEY_LYRICS_OFFSET_MS, 0)
-            .coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
+        // --- BACA OFFSET LIRIK PER LAGU ---
+        val offsetMap = mutableMapOf<String, Int>()
+        prefs.all.forEach { (key, value) ->
+            if (key.startsWith("lyrics_offset_") && value is Int) {
+                val songId = key.removePrefix("lyrics_offset_")
+                offsetMap[songId] = value.coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
+            }
+        }
+        lyricsOffsets.value = offsetMap
+// ----------------------------------
         translationLanguage.value = prefs.getString(KEY_TRANSLATION_LANGUAGE, "").orEmpty()
         if (highPerformanceMode.value) {
             reduceAnimation.value = false
@@ -1553,11 +1561,10 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_LYRICS_BLUR, value).apply()
     }
 
-    fun setLyricsOffsetMs(value: Int) {
-        val normalized = value.coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
-        if (lyricsOffsetMs.value == normalized) return
-        lyricsOffsetMs.value = normalized
-        prefs.edit().putInt(KEY_LYRICS_OFFSET_MS, normalized).apply()
+    fun setLyricsOffset(songId: String, offsetMs: Int, prefs: android.content.SharedPreferences) {
+        val clamped = offsetMs.coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
+        prefs.edit().putInt("lyrics_offset_$songId", clamped).apply()
+        lyricsOffsets.value = lyricsOffsets.value + (songId to clamped)
     }
 
     /** Blank restores "follow the app language"; see [translationLanguage]. */
